@@ -134,3 +134,18 @@ def test_link_title_is_valid():
     md = '![t](figures/slide-001.png "title")'
     assert find_refs(md) == [1]
     assert find_malformed(md) == []
+
+
+@pytest.mark.parametrize(
+    "markdown, bad",
+    [
+        ("![cap](figures/slide-002.PNG)", "figures/slide-002.PNG"),
+        ("![cap](figures/SLIDE-002.png)", "figures/SLIDE-002.png"),
+        ("[see](figures/slide-003.Png)", "figures/slide-003.Png"),
+        ("prose naming figures/slide-004.PNG here", "figures/slide-004.PNG"),
+    ],
+)
+def test_wrong_case_slide_links_are_malformed_not_refs(markdown, bad):
+    # finish writes lowercase slide-NNN.png, so only that spelling resolves.
+    assert find_refs(markdown) == []
+    assert find_malformed(markdown) == [bad]

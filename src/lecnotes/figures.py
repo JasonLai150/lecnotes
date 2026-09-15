@@ -79,13 +79,14 @@ STRICT_SRC_RE = re.compile(r"figures/slide-(\d{3}|[1-9]\d{3,})\.png")
 
 # Looser: any string that merely looks like a slide image target, used to spot
 # links that are close to STRICT_SRC_RE but not it, so they are reported rather
-# than silently ignored.
-SLIDE_PNG_RE = re.compile(r"slide-\d+\.png")
+# than silently ignored. Case-insensitive: `slide-002.PNG` is close but wrong,
+# because finish writes lowercase file names (STRICT_SRC_RE stays case-sensitive).
+SLIDE_PNG_RE = re.compile(r"slide-\d+\.png", re.IGNORECASE)
 
 # Matches a `slide-NNN.png`-shaped run of non-whitespace, for pulling the
 # offending fragment out of prose or markup that failed to parse as a link at
 # all (an unclosed bracket, a bare filename mentioned in text, etc).
-LOOSE_TEXT_RE = re.compile(r"\S*slide-\d+\.png\S*")
+LOOSE_TEXT_RE = re.compile(r"\S*slide-\d+\.png\S*", re.IGNORECASE)
 
 
 

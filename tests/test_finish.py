@@ -162,3 +162,12 @@ def test_punctuated_deck_name_flows_through_to_the_output_file(synth, tmp_path):
     result = finish(root)
     assert result["output"] == str(workdir.out_dir(root) / "lec8-txn-cc.md")
     assert (workdir.out_dir(root) / "lec8-txn-cc.md").is_file()
+
+
+def test_wrong_case_extension_is_malformed(prepared):
+    write_notes(prepared, "# T\n\n![x](figures/slide-002.PNG)\n")
+    with pytest.raises(LecnotesError) as exc:
+        finish(prepared)
+    assert exc.value.code == "figure_malformed"
+    assert exc.value.detail["bad_links"] == ["figures/slide-002.PNG"]
+    assert not workdir.out_dir(prepared).exists()
