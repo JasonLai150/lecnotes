@@ -36,6 +36,9 @@ Start commit: 56e7d47 (189 tests passing)
 
 - Ruling: Task 5 review — `-o` resolving to the input Markdown itself, or to an existing directory, raises a new code `invalid_output` (exit 1) before anything is written — the reviewer reproduced `-o <input.md>` silently overwriting the source of truth with HTML, and `-o <dir>` crashing with a traceback; one code covers both because both mean 'this output path cannot be written' — cost if wrong: one more error code in the contract.
 
+- Ruling: Final review — fix wave covers Important 1-3 (samefile-based output identity incl. NOTES.md in workdir mode and parent-is-a-file; not_finished wording offering both remedies) plus minors: Notion title sanitizing (colon → ' - ', whitespace/control chars), zip entry names from normalized src with lexical outside-root check, tmp cleanup, HTML title top-level H1, image_not_found reasons, case-insensitive slide shape in finish, stale wording — all reproduced by the reviewer; the colon one hits every real lecture title — cost if wrong: small spec surface changes, recorded in the export spec's final-review amendments.
+- Ruling: Deferred — blockquote paragraph unwrapping, error-code mapping for non-UTF-8 sources/unreadable images, find_malformed double-listing — not reproduced on real notes or cosmetic — cost if wrong: a hard-wrapped callout shows literal asterisks in Notion; an unreadable file gives internal_error.
+
 ## Deferred minors
 
 - pre-plan (bracket-fix review): `find_malformed` can list one bad link twice when the link's own text also contains `slide-NNN.png` (e.g. `[see slide-021.png](figures/slide-021.png)` → href and text fragment). Cosmetic; correctness holds.
@@ -56,3 +59,4 @@ Start commit: 56e7d47 (189 tests passing)
 - Task 6: complete (commits 8cc1c75..0d193bc, review clean; real export of CS 8803 lec 1: 20/20 figures embedded in 8.5 MB HTML, 6.3 MB zip)
 - Task 5: fix round 1/5 (2 addressed, 0 open — -o == source overwrote Markdown; -o directory traceback; commits 0d193bc..c503277)
 - Task 5: complete (commits 338d2fb..c503277, review clean after 1 fix round; symlink and ..-relative -o verified)
+- Final review: With fixes — 0 critical, 3 important, 9 minor (56e7d47..5671b0c). One fix wave per final-fix-brief.md.

@@ -230,3 +230,32 @@ Test-first, with fixtures synthesized at test time: Markdown strings written to
   Markdown being exported, or is an existing directory, `export` raises
   `invalid_output` (exit 1) before writing anything. Overwriting the input would
   destroy the source of truth.
+
+## Amendments (2026-09-15, from the final whole-feature review)
+
+- **Output identity is by file, not path string.** `invalid_output` is raised when the
+  output path is an existing directory, when its parent exists but is not a directory,
+  or when it is the *same file* as the Markdown being exported (`os.path.samefile`,
+  which is correct on case-insensitive filesystems like macOS APFS and for hard links
+  and symlinks). In workdir mode, the output also may not be the workdir's `NOTES.md`
+  — the one file that cannot be rebuilt.
+- **`not_finished` when the files differ** no longer assumes which side changed. The
+  message says `NOTES.md` and `out/<deck>.md` differ, and gives both remedies: run
+  `lecnotes finish` if `NOTES.md` is the version to keep, or export
+  `out/<deck>.md` directly if that file was edited on purpose.
+- **Titles.** HTML and Notion both take the first *top-level* H1. For the Notion file
+  name, any run of whitespace (including newlines from a setext heading) becomes one
+  space, control characters are dropped, a colon with its surrounding spaces becomes
+  ` - ` (so `Learning from Data: Imitation` → `Learning from Data - Imitation`), and the
+  remaining `/ \ * ? " < > |` become `-`; then trim and cap at 100 characters.
+- **Zip entry names come from the link as written**, not the resolved path: the
+  percent-decoded, normalized `src` (`./figures/x.png` → `figures/x.png`), so the link
+  in the Markdown always resolves inside the zip even when the file is a symlink. A
+  local image is "outside the root" for `--to notion` when its `src` is absolute or its
+  normalized path starts with `..`. An image's MIME type follows the extension in the
+  `src`.
+- **No partial files.** A failure while writing the Notion zip removes the temporary
+  file.
+- **`image_not_found` message** separates missing files from unsupported types.
+- **finish** treats `slide-NNN.PNG` (any case) as slide-shaped, so a wrong-case
+  extension is reported as `figure_malformed` rather than passing silently.
