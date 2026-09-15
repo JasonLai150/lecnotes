@@ -65,6 +65,7 @@ Start commit: e8bf4ef
 - Task 2: minor (deferred): implementer report described a function docstring that isn't in the committed code (report accuracy only).
 - Task 3: minor (deferred): fixtures have no embedded-image key, so the image-area (>40,000px) branch of has_figure is untested by any planned test.
 - Task 6: minor (deferred): plan File Structure table lists workdir.create() but no brief defines or calls it; table is stale.
+- Task 8: minor (deferred, plan-mandated): (a) duplicated no-such-file guard in .pdf and .pptx branches of resolve_source; (b) test_pptx_conversion_success never asserts the soffice command shape; (c) conversion_failed discards soffice stderr, so real failures carry no diagnostic.
 
 ## Progress
 - Task 1: complete (commits be1f4fd..263ad3e, review clean)
@@ -74,3 +75,4 @@ Start commit: e8bf4ef
 - Task 5: complete (commits e09d315..dd45b95, review clean)
 - Task 6: complete (commits 49e71db..7156123, review clean)
 - Task 7: complete (commits 8664e53..5296c99, review clean; reviewer confirmed full-page renders never hit the 1401px rounding across 2000 random page sizes)
+- Task 8: complete (commits f462831..d4fcd6e, review clean)
