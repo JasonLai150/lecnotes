@@ -38,5 +38,12 @@ Start commit: 56e7d47 (189 tests passing)
 
 - pre-plan (bracket-fix review): `find_malformed` can list one bad link twice when the link's own text also contains `slide-NNN.png` (e.g. `[see slide-021.png](figures/slide-021.png)` → href and text fragment). Cosmetic; correctness holds.
 - pre-plan (flag removal): `tests/conftest.py` deck_47 comment still says "slide 8 carries a figure".
+- Task 1: minor (deferred): mdparse.py lost the note on why reusing one parser instance is safe; no finish-level test of a figure link inside a pipe table (covered one layer down in test_mdparse).
+- Task 2: minor (deferred): test_image_types checks 3 of 6 MIME entries; no test for a filesystem-absolute image src (e.g. /abs/x.png).
+- Task 3: minor (deferred): title extraction uses tokens[i+1].children without the `or []` guard used elsewhere; no test for a figure paragraph inside a loose list or blockquote (verified correct manually).
 
 ## Progress
+- Task 1: complete (commits f4407ff..7e83b78, review clean)
+- Ruling: Controller amended Task 2's commit message (827d5d8, formerly fdf0806) before push — the implementer put the trailer lines on the subject line; code unchanged — cost if wrong: none.
+- Task 2: complete (commits 7e83b78..827d5d8, review clean; ⚠️ absolute-path src resolved: pathlib join discards base_dir, but images_outside compares the resolved absolute path with is_relative_to(base), so it is flagged for notion like ../ — final review to confirm with a test)
+- Task 3: complete (commits 827d5d8..b84a183, review clean; escaping, post-parse data URIs, and nested figures verified by reviewer)
