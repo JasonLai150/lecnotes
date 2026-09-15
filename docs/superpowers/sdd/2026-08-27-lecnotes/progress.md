@@ -73,3 +73,4 @@ Start commit: e8bf4ef
 - Task 4: complete (commits b32a8cd..a1be34d, review clean; deviation: crop_render rescales when pymupdf outward pixel rounding yields 1401px — reviewer reproduced and stress-tested; ⚠️ find_refs confirmed scheduled in Task 5)
 - Task 5: complete (commits e09d315..dd45b95, review clean)
 - Task 6: complete (commits 49e71db..7156123, review clean)
+- Task 7: complete (commits 8664e53..5296c99, review clean; reviewer confirmed full-page renders never hit the 1401px rounding across 2000 random page sizes)
