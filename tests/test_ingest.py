@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 import pytest
 
 from lecnotes.errors import LecnotesError
@@ -56,13 +58,36 @@ def test_pptx_without_soffice_names_the_install_command(tmp_path, monkeypatch):
 
 def test_pptx_conversion_that_emits_no_pdf_fails_clearly(tmp_path, monkeypatch, synth):
     monkeypatch.setattr("lecnotes.ingest.shutil.which", lambda _: "/usr/bin/soffice")
-    monkeypatch.setattr("lecnotes.ingest.subprocess.run", lambda *a, **k: None)
+    monkeypatch.setattr(
+        "lecnotes.ingest.subprocess.run",
+        lambda *a, **k: SimpleNamespace(
+            returncode=1, stdout=b"", stderr=b"Error: source file could not be loaded\n"
+        ),
+    )
     pptx = tmp_path / "lec1.pptx"
     pptx.write_bytes(b"stub")
     with pytest.raises(LecnotesError) as exc:
         resolve_source(pptx, tmp_path / "tmp")
     assert exc.value.code == "conversion_failed"
     assert exc.value.exit_code == 2
+    assert "source file could not be loaded" in exc.value.detail["stderr"]
+
+
+def test_conversion_failed_keeps_only_the_tail_of_stderr(tmp_path, monkeypatch):
+    monkeypatch.setattr("lecnotes.ingest.shutil.which", lambda _: "/usr/bin/soffice")
+    noisy = "".join(f"line {i}\n" for i in range(1, 101)).encode() + b"bad \xff byte\n"
+    monkeypatch.setattr(
+        "lecnotes.ingest.subprocess.run",
+        lambda *a, **k: SimpleNamespace(returncode=1, stdout=b"", stderr=noisy),
+    )
+    pptx = tmp_path / "lec1.pptx"
+    pptx.write_bytes(b"stub")
+    with pytest.raises(LecnotesError) as exc:
+        resolve_source(pptx, tmp_path / "tmp")
+    lines = exc.value.detail["stderr"].splitlines()
+    assert len(lines) == 20
+    assert lines[0] == "line 82"
+    assert lines[-1] == "bad \ufffd byte"
 
 
 def test_pptx_conversion_success(tmp_path, monkeypatch, synth):
@@ -72,6 +97,7 @@ def test_pptx_conversion_success(tmp_path, monkeypatch, synth):
     def fake_run(cmd, **kwargs):
         # soffice writes <stem>.pdf into the outdir; stand in for that.
         synth(tmpdir / "lec1.pdf", [{"text": "converted"}])
+        return SimpleNamespace(returncode=0, stdout=b"", stderr=b"")
 
     monkeypatch.setattr("lecnotes.ingest.subprocess.run", fake_run)
     pptx = tmp_path / "lec1.pptx"

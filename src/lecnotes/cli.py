@@ -88,6 +88,21 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(f"error: {err.message}", file=sys.stderr)
         return err.exit_code
+    except Exception as err:
+        # A --json caller parses stdout; a bare traceback would leave it empty.
+        # Humans get the traceback, which is more useful to them than a summary.
+        if not args.json:
+            raise
+        print(
+            json.dumps(
+                {
+                    "ok": False,
+                    "error": "internal_error",
+                    "message": f"{type(err).__name__}: {err}",
+                }
+            )
+        )
+        return 1
 
     if args.json:
         print(json.dumps(result))

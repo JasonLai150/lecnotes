@@ -54,6 +54,7 @@ def test_validation_failure_exits_1_with_json_error(deck, tmp_path, capsys):
     assert payload == {
         "ok": False,
         "error": "figure_out_of_range",
+        "message": "NOTES.md references slides that are not in this deck: 91 (deck has 5)",
         "bad_refs": [{"slide": 91, "max": 5}],
     }
 
@@ -111,3 +112,25 @@ def test_unknown_subcommand_returns_1(capsys):
     captured = capsys.readouterr()
     assert captured.out == ""
     assert captured.err != ""
+
+
+def test_unexpected_exception_in_json_mode_is_internal_error(deck, monkeypatch, capsys):
+    def boom(*a, **k):
+        raise RuntimeError("disk on fire")
+
+    monkeypatch.setattr("lecnotes.cli.prep", boom)
+    assert main(["prep", str(deck), "--json"]) == 1
+    assert json.loads(capsys.readouterr().out) == {
+        "ok": False,
+        "error": "internal_error",
+        "message": "RuntimeError: disk on fire",
+    }
+
+
+def test_unexpected_exception_in_human_mode_propagates(deck, monkeypatch):
+    def boom(*a, **k):
+        raise RuntimeError("disk on fire")
+
+    monkeypatch.setattr("lecnotes.cli.prep", boom)
+    with pytest.raises(RuntimeError, match="disk on fire"):
+        main(["prep", str(deck)])

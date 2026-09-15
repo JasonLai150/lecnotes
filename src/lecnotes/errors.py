@@ -21,4 +21,4 @@ class LecnotesError(Exception):
         return 2 if self.code in _DEPENDENCY_CODES else 1
 
     def to_dict(self) -> dict:
-        return {"ok": False, "error": self.code, **self.detail}
+        return {"ok": False, "error": self.code, "message": self.message, **self.detail}

@@ -9,6 +9,7 @@ from .errors import LecnotesError
 from .naming import slugify
 
 CONVERTIBLE = {".pptx", ".ppt"}
+STDERR_TAIL_LINES = 20  # enough to see why soffice failed, not its whole log
 INSTALL_HINT = (
     "Converting .pptx/.ppt needs LibreOffice:\n"
     "  brew install --cask libreoffice\n"
@@ -30,7 +31,7 @@ def _convert(path: Path, tmpdir: Path) -> Path:
         raise LecnotesError("missing_converter", INSTALL_HINT, suffix=path.suffix)
 
     tmpdir.mkdir(parents=True, exist_ok=True)
-    subprocess.run(
+    proc = subprocess.run(
         ["soffice", "--headless", "--convert-to", "pdf", "--outdir", str(tmpdir), str(path)],
         check=False,
         capture_output=True,
@@ -38,10 +39,12 @@ def _convert(path: Path, tmpdir: Path) -> Path:
 
     out = tmpdir / f"{path.stem}.pdf"
     if not out.is_file():
+        stderr = (proc.stderr or b"").decode("utf-8", errors="replace")
         raise LecnotesError(
             "conversion_failed",
             f"soffice ran but produced no PDF for {path.name}",
             source=str(path),
+            stderr="\n".join(stderr.splitlines()[-STDERR_TAIL_LINES:]),
         )
     return out
 

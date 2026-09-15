@@ -24,16 +24,21 @@ def test_str_is_the_message():
         ("not_a_workdir", 1),
         ("notes_empty", 1),
         ("figure_out_of_range", 1),
+        ("figure_malformed", 1),
+        ("source_not_found", 1),
+        ("invalid_pdf", 1),
+        ("internal_error", 1),
     ],
 )
 def test_exit_code_per_error_code(code, expected):
     assert LecnotesError(code, "msg").exit_code == expected
 
 
-def test_to_dict_merges_detail():
+def test_to_dict_carries_the_message_and_merges_detail():
     err = LecnotesError("figure_out_of_range", "bad ref", bad_refs=[{"slide": 91, "max": 47}])
     assert err.to_dict() == {
         "ok": False,
         "error": "figure_out_of_range",
+        "message": "bad ref",
         "bad_refs": [{"slide": 91, "max": 47}],
     }
