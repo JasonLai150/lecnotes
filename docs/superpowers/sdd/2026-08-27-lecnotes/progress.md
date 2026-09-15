@@ -89,3 +89,4 @@ Start commit: e8bf4ef
 - Task 11: complete (commits 43042b8..dae21a1, review clean)
 - Task 12: fix round 1/5 (1 addressed, 0 open — argparse usage errors exited 2; commits 280b517..c15c6e1)
 - Task 12: complete (commits ba0f4f3..c15c6e1, review clean after 1 fix round)
+- Task 13: complete (commits 126b515..8590591, review clean; ⚠️ README corpus stats resolved: match 4440 README's 1,226/1,240 text-layer and 758 figure counts)
