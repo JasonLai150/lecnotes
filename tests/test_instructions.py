@@ -36,10 +36,26 @@ def test_points_at_both_the_png_and_the_txt():
 
 
 def test_no_unreplaced_placeholders():
-    # string.Template substitution uses only `$`; braces are ordinary Markdown/
-    # math text here (e.g. `E_{x~p}[f(x)]`), not placeholder syntax.
     out = rendered()
-    assert "$" not in out
+    assert "{{" not in out and "}}" not in out
+
+
+def test_equations_are_latex():
+    out = rendered()
+    assert "$\\pi_\\theta(a_t \\mid s_t)$" in out
+    assert "\n    $$\n" in out
+    assert "\\$" in out  # how to write a literal dollar
+    assert "code spans" in out
+
+
+def test_no_plain_text_equation_wording():
+    assert "Type every equation as plain text" not in rendered()
+
+
+def test_values_containing_braces_or_dollars_are_inserted_verbatim():
+    out = rendered(deck="lec-{x}$", source_name="$deck{{slides}}.pdf")
+    assert "lec-{x}$" in out
+    assert "$deck{{slides}}.pdf" in out
 
 
 def test_warns_that_figure_links_use_figures_not_pages():

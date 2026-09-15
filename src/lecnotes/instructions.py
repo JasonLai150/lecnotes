@@ -1,17 +1,17 @@
 """Fill the agent-facing contract template.
 
-string.Template is deliberate: the template is full of Markdown braces and
-backticks, and $-substitution leaves all of them alone.
+Placeholders are {{name}}. The template teaches LaTeX, so it is full of dollar
+signs; string.Template's $-placeholders would collide with them.
 """
 
+import re
 from importlib.resources import files
-from string import Template
+
+_PLACEHOLDER = re.compile(r"\{\{(\w+)\}\}")
 
 
 def render_instructions(deck: str, slides: int, source_name: str) -> str:
     raw = files("lecnotes.templates").joinpath("instructions.md").read_text(encoding="utf-8")
-    return Template(raw).substitute(
-        deck=deck,
-        slides=slides,
-        source_name=source_name,
-    )
+    values = {"deck": deck, "slides": str(slides), "source_name": source_name}
+    # One pass, so a value that itself contains "{{...}}" is never re-expanded.
+    return _PLACEHOLDER.sub(lambda m: values[m.group(1)], raw)

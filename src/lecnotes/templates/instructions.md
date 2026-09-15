@@ -1,11 +1,11 @@
-# Write the notes for `$deck`
+# Write the notes for `{{deck}}`
 
 You are writing a teaching document from a lecture deck. Everything you need is
 in this directory.
 
 ## Source material
 
-The deck is `source.pdf` (originally `$source_name`), **$slides slides**. For each
+The deck is `source.pdf` (originally `{{source_name}}`), **{{slides}} slides**. For each
 slide there are two files:
 
 - `pages/slide-001.png` — the rendered slide, exactly as the lecture shows it.
@@ -34,9 +34,22 @@ Use `#` for the title, `##` and `###` for sections. Tables are welcome. End with
 
 ### Equations
 
-Type every equation as plain text with its variables defined — `O(N log N)`,
-`E_{x~p}[f(x)]` — even when the slide shows it only as an image. Do not link a
-slide as a figure just to show an equation.
+Write math as LaTeX. Use `$...$` for math inside a sentence, and a display block
+for an equation that stands on its own:
+
+    The policy $\pi_\theta(a_t \mid s_t)$ maps states to action probabilities.
+
+    $$
+    \nabla_\theta J(\theta) = \mathbb{E}_{\tau \sim p_\theta}\left[\sum_t \nabla_\theta \log \pi_\theta(a_t \mid s_t)\, \hat{A}_t\right]
+    $$
+
+Put each `$$` on its own line, with a blank line before and after the block. No
+space just inside the dollar signs (`$x$`, not `$ x $`). Write a literal dollar
+sign as `\$`. Never use code spans or code blocks for math — keep those for code,
+identifiers, commands, and file names.
+
+Type every equation, including ones the slide shows only as an image, and define
+the variables it uses. Do not link a slide as a figure just to show an equation.
 
 ### Going beyond the slides
 
@@ -79,4 +92,4 @@ Run this from inside this directory:
     lecnotes finish .
 
 That validates your figure links, crops and copies the figures, and assembles
-`out/$deck.md`.
+`out/{{deck}}.md`.
