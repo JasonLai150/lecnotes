@@ -60,6 +60,8 @@ Start commit: e8bf4ef
 - preflight: `workdir.OUT_FIGURES` constant is defined but `out_figures_dir()` builds the path from `OUT` + "figures" literally.
 - preflight: INSTRUCTIONS.md says `lecnotes finish <workdir name>`, which only works if the agent's cwd is the workdir's parent; an agent cd'd into the workdir needs `lecnotes finish .`. Editorial-template territory (deferred by spec).
 - Task 1: minor (deferred): pyproject console script points at lecnotes.cli before T12 creates it (expected forward reference).
+- Task 2: minor (deferred): implementer report described a function docstring that isn't in the committed code (report accuracy only).
 
 ## Progress
 - Task 1: complete (commits be1f4fd..263ad3e, review clean)
+- Task 2: complete (commits e9a6408..fe7a65b, review clean)
