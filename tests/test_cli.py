@@ -161,6 +161,39 @@ def test_module_entry_point_propagates_the_exit_code(tmp_path):
     assert json.loads(proc.stdout)["error"] == "not_a_workdir"
 
 
+def test_export_html_human_output(synth, tmp_path, capsys):
+    root = _finished(synth, tmp_path)
+    capsys.readouterr()
+    assert main(["export", str(root), "--to", "html"]) == 0
+    out = capsys.readouterr().out
+    assert out.splitlines()[0] == str(root / "out" / "lec1.html")
+    assert "1 image" in out
+
+
+def test_export_notion_json(synth, tmp_path, capsys):
+    root = _finished(synth, tmp_path)
+    capsys.readouterr()
+    assert main(["export", str(root), "--to", "notion", "--json"]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["ok"] is True
+    assert payload["format"] == "notion"
+    assert payload["output"].endswith("lec1-notion.zip")
+    assert payload["images"] == 1 and payload["bytes"] > 0
+
+
+def test_export_requires_to(tmp_path, capsys):
+    md = tmp_path / "n.md"
+    md.write_text("x\n")
+    assert main(["export", str(md)]) == 1
+    assert "--to" in capsys.readouterr().err
+
+
+def test_export_rejects_unknown_format(tmp_path, capsys):
+    md = tmp_path / "n.md"
+    md.write_text("x\n")
+    assert main(["export", str(md), "--to", "pdf"]) == 1
+
+
 # --- every error code, in both output modes ---------------------------------
 #
 # Each scenario builds the situation on disk and returns the argv that trips it.
@@ -233,6 +266,33 @@ def _figure_malformed(tmp_path, synth, monkeypatch):
     return ["finish", str(root)]
 
 
+def _finished(synth, tmp_path, notes="# T\n\n![a](figures/slide-001.png)\n"):
+    pdf, root = _prepped(synth, tmp_path, notes=notes)
+    commands.finish(root)
+    return root
+
+
+def _not_finished(tmp_path, synth, monkeypatch):
+    _, root = _prepped(synth, tmp_path)
+    return ["export", str(root), "--to", "html"]
+
+
+def _image_not_found(tmp_path, synth, monkeypatch):
+    md = tmp_path / "notes.md"
+    md.write_text("![x](figures/missing.png)\n")
+    return ["export", str(md), "--to", "html"]
+
+
+def _image_outside_root(tmp_path, synth, monkeypatch):
+    from conftest import make_png
+
+    make_png(tmp_path / "shared" / "x.png")
+    notes = tmp_path / "notes"
+    notes.mkdir()
+    (notes / "n.md").write_text("![x](../shared/x.png)\n")
+    return ["export", str(notes / "n.md"), "--to", "notion"]
+
+
 ERROR_SCENARIOS = {
     "source_not_found": (_source_not_found, 1),
     "unsupported_format": (_unsupported_format, 1),
@@ -244,6 +304,9 @@ ERROR_SCENARIOS = {
     "notes_empty": (_notes_empty, 1),
     "figure_out_of_range": (_figure_out_of_range, 1),
     "figure_malformed": (_figure_malformed, 1),
+    "not_finished": (_not_finished, 1),
+    "image_not_found": (_image_not_found, 1),
+    "image_outside_root": (_image_outside_root, 1),
 }
 
 

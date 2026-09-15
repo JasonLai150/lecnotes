@@ -8,9 +8,12 @@ from pathlib import Path
 
 from . import workdir
 from .errors import LecnotesError
+from .export_html import render_html
+from .export_notion import images_outside, write_notion_zip
 from .figures import TARGET_LONG_EDGE, crop_render, find_malformed, find_refs
 from .ingest import resolve_source
 from .instructions import render_instructions
+from .markdown_doc import local_images, missing_images
 from .render import render_deck
 
 NOTES_STUB = (
@@ -148,4 +151,93 @@ def finish(root: Path) -> dict:
         "deck": manifest["deck"],
         "output": str(out),
         "figures_resolved": len(refs),
+    }
+
+
+def _export_source(target: Path) -> Path:
+    """The Markdown file to export, from a workdir or a .md path."""
+    if not target.exists():
+        raise LecnotesError(
+            "source_not_found", f"no such file or directory: {target}", path=str(target)
+        )
+
+    if target.is_dir():
+        if not workdir.is_workdir(target):
+            raise LecnotesError(
+                "unsupported_format",
+                f"{target} is a directory but not a lecnotes workdir; "
+                "pass a workdir or a .md file",
+                path=str(target),
+            )
+        deck = workdir.load_manifest(target)["deck"]
+        markdown = workdir.out_dir(target) / f"{deck}.md"
+        if not markdown.is_file():
+            raise LecnotesError(
+                "not_finished",
+                f"{markdown} does not exist yet; run `lecnotes finish` on this workdir first",
+                path=str(target),
+            )
+        notes = workdir.notes_path(target)
+        if notes.is_file() and notes.read_text(encoding="utf-8") != markdown.read_text(
+            encoding="utf-8"
+        ):
+            raise LecnotesError(
+                "not_finished",
+                "NOTES.md has changed since the last finish; "
+                "run `lecnotes finish` again before exporting",
+                path=str(target),
+            )
+        return markdown
+
+    if target.suffix.lower() != ".md":
+        raise LecnotesError(
+            "unsupported_format",
+            f"cannot export {target.name}; pass a lecnotes workdir or a .md file",
+            path=str(target),
+        )
+    return target
+
+
+def export(target: Path, fmt: str, out: Path | None = None) -> dict:
+    source = _export_source(Path(target))
+    markdown = source.read_text(encoding="utf-8")
+    base_dir = source.parent
+    images = local_images(markdown, base_dir)
+
+    # Validate everything before writing anything.
+    missing = missing_images(images)
+    if missing:
+        raise LecnotesError(
+            "image_not_found",
+            "these images are missing or not a supported type "
+            "(png, jpg, jpeg, gif, svg, webp): " + ", ".join(missing),
+            missing=missing,
+        )
+
+    if fmt == "notion":
+        outside = images_outside(images, base_dir)
+        if outside:
+            raise LecnotesError(
+                "image_outside_root",
+                "a Notion zip can only include images inside the Markdown file's "
+                "folder; move or copy these: " + ", ".join(outside),
+                outside=outside,
+            )
+        dest = Path(out) if out else base_dir / f"{source.stem}-notion.zip"
+        write_notion_zip(markdown, images, base_dir, dest, source.stem)
+    elif fmt == "html":
+        dest = Path(out) if out else base_dir / f"{source.stem}.html"
+        html = render_html(markdown, base_dir, source.stem)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(html, encoding="utf-8")
+    else:
+        raise ValueError(f"unknown export format: {fmt}")
+
+    return {
+        "ok": True,
+        "format": fmt,
+        "source": str(source),
+        "output": str(dest),
+        "images": len({image.path for image in images}),
+        "bytes": dest.stat().st_size,
     }

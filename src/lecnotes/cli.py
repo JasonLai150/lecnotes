@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 from . import __version__
-from .commands import finish, prep
+from .commands import export, finish, prep
 from .errors import LecnotesError
 
 
@@ -44,6 +44,14 @@ def _build_parser() -> argparse.ArgumentParser:
     f.add_argument("workdir", type=Path, help="workdir created by prep")
     f.add_argument("--json", action="store_true", help="machine-readable output")
 
+    e = sub.add_parser("export", help="convert finished notes to HTML or a Notion import zip")
+    e.add_argument("source", type=Path, help="a finished workdir, or any .md file")
+    e.add_argument(
+        "--to", dest="fmt", required=True, choices=["html", "notion"], help="output format"
+    )
+    e.add_argument("-o", "--out", type=Path, default=None, help="output file path")
+    e.add_argument("--json", action="store_true", help="machine-readable output")
+
     return parser
 
 
@@ -62,6 +70,14 @@ def _report_finish(result: dict) -> None:
     print(f"  {result['figures_resolved']} figures resolved")
 
 
+def _report_export(result: dict) -> None:
+    size = result["bytes"]
+    human = f"{size / 1_048_576:.1f} MB" if size >= 1_048_576 else f"{size / 1024:.0f} KB"
+    noun = "image" if result["images"] == 1 else "images"
+    print(f"{result['output']}")
+    print(f"  {result['images']} {noun}, {human}")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     try:
@@ -78,9 +94,12 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "prep":
             result = prep(args.source, out=args.out, force=args.force)
             reporter = _report_prep
-        else:
+        elif args.command == "finish":
             result = finish(args.workdir)
             reporter = _report_finish
+        else:
+            result = export(args.source, args.fmt, out=args.out)
+            reporter = _report_export
     except LecnotesError as err:
         # One place renders every failure, so --json and human output cannot drift.
         if args.json:
