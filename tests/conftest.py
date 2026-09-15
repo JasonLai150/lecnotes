@@ -57,7 +57,7 @@ def synth():
 def deck_47(tmp_path):
     """A 47-slide deck, matching the numbers used throughout the spec."""
     specs = [{"text": f"Slide {i}"} for i in range(1, 48)]
-    specs[7] = {"text": "Slide 8", "many_lines": 20}  # slide 8 carries a figure
+    specs[7] = {"text": "Slide 8", "many_lines": 20}  # slide 8 has 20 line drawings
     return synth_pdf(tmp_path / "lec1.pdf", specs)
 
 

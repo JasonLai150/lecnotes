@@ -71,22 +71,33 @@ lecnotes export lec13.notes --to notion   # lec13.notes/out/lec13-notion.zip
   the `.md` alone loses the images; the zip keeps them together.)
 
 `export` also accepts any `.md` file, resolving images relative to it, and `-o`
-sets the output path. On a workdir it refuses to export notes that have changed
-since the last `finish`, so you never share a stale copy.
+sets the output path. On a workdir it refuses to export while `NOTES.md` and
+`out/<deck>.md` differ, so you never share a stale copy: run `finish` again, or,
+if you edited `out/<deck>.md` on purpose, export that file directly.
 
 ## For agents
 
-Both commands take `--json`:
+All three commands take `--json`:
 
 ```console
 $ lecnotes prep lec13.pdf --json
 {"ok":true,"workdir":"lec13.notes","deck":"lec13","slides":47,
  "notes_preserved":false,"instructions":"lec13.notes/INSTRUCTIONS.md",
  "write_to":"lec13.notes/NOTES.md","next":"lecnotes finish lec13.notes"}
+
+$ lecnotes export lec13.notes --to html --json
+{"ok":true,"format":"html","source":"lec13.notes/out/lec13.md",
+ "output":"lec13.notes/out/lec13.html","images":12,"bytes":2481734}
 ```
 
 Exit codes: `0` success, `1` usage or validation failure, `2` missing external
 dependency. Failures print `{"ok": false, "error": "<code>", "message": "<text>", ...}`.
+For `export`, the validation failures are `not_finished` (the workdir has no
+`out/` Markdown yet, or `NOTES.md` and it differ), `image_not_found` (an image is
+missing or not a supported type), `image_outside_root` (`--to notion` only: an
+image link is absolute or climbs out of the Markdown's folder) and
+`invalid_output` (`-o` is a directory, sits under a file, or is the Markdown being
+exported or the workdir's `NOTES.md`). Nothing is written when any of them occur.
 
 Figure links must be written exactly as `![caption](figures/slide-NNN.png)`, with
 the slide number zero-padded to three digits. A slide image link in any other form
