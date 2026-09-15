@@ -67,6 +67,12 @@ pseudocode allowed. Still open, from the writing agents' own feedback:
   reports both the href and the text fragment. Cosmetic. (`figures.find_malformed`)
 - **A whitespace-only `#` heading** falls back to the file stem for the Notion title
   but stays in the body as an empty heading. (`export_notion.split_title`)
+- **Export's `images` count is by target file.** Two links that resolve to one file
+  (e.g. symlinks sharing a target) count once, so the number can be lower than the
+  zip's image entries. Metadata only. (`commands.export`)
+- **Notion title sanitizing can leave a double space** when a control character sits
+  between two spaces (`"a \x01 b"` → `"a  b"`). Harmless in a file name.
+  (`export_notion.sanitize_filename`)
 - **Symlinked `pages/` or `out/figures/`** makes `rmtree` raise a raw `OSError`.
   Nothing is deleted. (`commands.prep`, `commands.finish`)
 

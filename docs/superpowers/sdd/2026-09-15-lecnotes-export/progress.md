@@ -39,6 +39,10 @@ Start commit: 56e7d47 (189 tests passing)
 - Ruling: Final review — fix wave covers Important 1-3 (samefile-based output identity incl. NOTES.md in workdir mode and parent-is-a-file; not_finished wording offering both remedies) plus minors: Notion title sanitizing (colon → ' - ', whitespace/control chars), zip entry names from normalized src with lexical outside-root check, tmp cleanup, HTML title top-level H1, image_not_found reasons, case-insensitive slide shape in finish, stale wording — all reproduced by the reviewer; the colon one hits every real lecture title — cost if wrong: small spec surface changes, recorded in the export spec's final-review amendments.
 - Ruling: Deferred — blockquote paragraph unwrapping, error-code mapping for non-UTF-8 sources/unreadable images, find_malformed double-listing — not reproduced on real notes or cosmetic — cost if wrong: a hard-wrapped callout shows literal asterisks in Notion; an unreadable file gives internal_error.
 
+- Ruling: Accept fix-wave deviations — parent-is-a-file check walks to the nearest existing ancestor (also catches `-o file/sub/out.html`); HTML data-URI MIME follows the link's extension like `LocalImage.mime` (prevents a KeyError on a `.png` symlink to a `.bin`) — both strict improvements consistent with the amendments — cost if wrong: none.
+- Ruling: Parked to docs/BACKLOG.md — export result `images` counts distinct target files; sanitize can leave a double space around a dropped control character — cosmetic — cost if wrong: a slightly-off count in JSON; a double space in a Notion page title.
+- Ruling: Keep this plan's SDD workspace committed under docs/superpowers/sdd/ (user asked for agent docs in docs/); only untracked review-*.diff scratch removed — cost if wrong: extra process files.
+
 ## Deferred minors
 
 - pre-plan (bracket-fix review): `find_malformed` can list one bad link twice when the link's own text also contains `slide-NNN.png` (e.g. `[see slide-021.png](figures/slide-021.png)` → href and text fragment). Cosmetic; correctness holds.
@@ -60,3 +64,4 @@ Start commit: 56e7d47 (189 tests passing)
 - Task 5: fix round 1/5 (2 addressed, 0 open — -o == source overwrote Markdown; -o directory traceback; commits 0d193bc..c503277)
 - Task 5: complete (commits 338d2fb..c503277, review clean after 1 fix round; symlink and ..-relative -o verified)
 - Final review: With fixes — 0 critical, 3 important, 9 minor (56e7d47..5671b0c). One fix wave per final-fix-brief.md.
+- Final fix wave: 4 commits 57aca23..c5e279a; scoped re-review: all 10 findings ADDRESSED, deviations a-d accepted, no new breakage; 291 tests passing, no warnings.
