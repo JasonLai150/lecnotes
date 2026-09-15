@@ -11,8 +11,9 @@ from urllib.parse import unquote
 
 from markdown_it.common.utils import escapeHtml
 
+from .katex import katex_css, katex_js
 from .markdown_doc import IMAGE_TYPES, is_external
-from .mdparse import new_parser
+from .mdparse import inline_text, new_parser
 
 _CSS = """
 :root {
@@ -64,6 +65,33 @@ hr { border: none; border-top: 1px solid var(--rule); margin: 2.5em 0; }
 }
 """
 
+_MATH_CSS = """
+.lecnotes-math-display { display: block; margin: 1.2em 0; overflow-x: auto; overflow-y: hidden; }
+"""
+
+# Render every math element in place. throwOnError: false shows a bad formula's
+# source in red instead of breaking the page; trust: false blocks \href and friends.
+_RENDER_MATH = """
+document.querySelectorAll(".lecnotes-math").forEach(function (el) {
+  katex.render(el.textContent, el, {
+    displayMode: el.classList.contains("lecnotes-math-display"),
+    throwOnError: false,
+    trust: false
+  });
+});
+"""
+
+_MATH_TOKENS = ("math_inline", "math_inline_double", "math_block")
+
+
+def _math_inline(self, tokens, idx, options, env):
+    return f'<span class="lecnotes-math">{escapeHtml(tokens[idx].content)}</span>'
+
+
+def _math_display(self, tokens, idx, options, env):
+    latex = escapeHtml(tokens[idx].content.strip())
+    return f'<div class="lecnotes-math lecnotes-math-display">{latex}</div>\n'
+
 
 def _data_uri(src: str, path: Path) -> str:
     # The type follows the link's extension, as in markdown_doc.LocalImage.mime.
@@ -91,10 +119,14 @@ def render_html(markdown: str, base_dir: Path, title_fallback: str) -> str:
     md = new_parser()  # a fresh instance: the render rules below must not leak
     md.add_render_rule("paragraph_open", _paragraph_open)
     md.add_render_rule("paragraph_close", _paragraph_close)
+    md.add_render_rule("math_inline", _math_inline)
+    md.add_render_rule("math_inline_double", _math_display)
+    md.add_render_rule("math_block", _math_display)
 
     base = Path(base_dir).resolve()
     tokens = md.parse(markdown)
     title = None
+    has_math = False
 
     for i, token in enumerate(tokens):
         if (
@@ -103,7 +135,12 @@ def render_html(markdown: str, base_dir: Path, title_fallback: str) -> str:
             and token.tag == "h1"
             and token.level == 0  # not a heading quoted inside a blockquote or list
         ):
-            title = md.renderer.renderInlineAsText(tokens[i + 1].children or [], md.options, {})
+            title = inline_text(tokens[i + 1].children or [])
+
+        if token.type in _MATH_TOKENS or any(
+            child.type in _MATH_TOKENS for child in (token.children or [])
+        ):
+            has_math = True
 
         if token.type != "inline" or not token.children:
             continue
@@ -121,11 +158,11 @@ def render_html(markdown: str, base_dir: Path, title_fallback: str) -> str:
         if only_an_image and opener.type == "paragraph_open" and not opener.hidden:
             opener.meta["figure"] = True
             closer.meta["figure"] = True
-            closer.meta["caption"] = md.renderer.renderInlineAsText(
-                token.children[0].children or [], md.options, {}
-            )
+            closer.meta["caption"] = inline_text(token.children[0].children or [])
 
     body = md.renderer.render(tokens, md.options, {})
+    head_math = f"<style>{katex_css()}{_MATH_CSS}</style>\n" if has_math else ""
+    body_math = f"<script>{katex_js()}</script>\n<script>{_RENDER_MATH}</script>\n" if has_math else ""
     return (
         "<!doctype html>\n"
         '<html lang="en">\n<head>\n'
@@ -133,7 +170,9 @@ def render_html(markdown: str, base_dir: Path, title_fallback: str) -> str:
         '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
         f"<title>{escapeHtml(title or title_fallback)}</title>\n"
         f"<style>{_CSS}</style>\n"
+        f"{head_math}"
         "</head>\n<body>\n"
         f"{body}"
+        f"{body_math}"
         "</body>\n</html>\n"
     )

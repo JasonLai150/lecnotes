@@ -98,3 +98,52 @@ def test_symlinked_image_mime_follows_the_src(tmp_path, png):
     png(tmp_path / "blob.png").rename(tmp_path / "blob.bin")
     (tmp_path / "fig.png").symlink_to(tmp_path / "blob.bin")
     assert 'src="data:image/png;base64,' in render_html("![p](fig.png)\n", tmp_path, "n")
+
+
+MATH_MD = (
+    "# Policy $\\pi$ gradients\n\n"
+    "Inline $a<b$ and $$x^2$$ here.\n\n"
+    "$$\n\\nabla_\\theta J(\\theta)\n$$\n"
+)
+
+
+def test_inline_math_is_escaped_latex_in_a_span(tmp_path):
+    html = render_html(MATH_MD, tmp_path, "n")
+    assert '<span class="lecnotes-math">a&lt;b</span>' in html
+
+
+def test_display_math_uses_a_display_div(tmp_path):
+    html = render_html(MATH_MD, tmp_path, "n")
+    assert '<div class="lecnotes-math lecnotes-math-display">x^2</div>' in html
+    assert '<div class="lecnotes-math lecnotes-math-display">\\nabla_\\theta J(\\theta)</div>' in html
+
+
+def test_katex_is_inlined_only_with_math(tmp_path):
+    from lecnotes.katex import katex_js
+
+    with_math = render_html(MATH_MD, tmp_path, "n")
+    assert katex_js() in with_math
+    assert "throwOnError: false" in with_math and "trust: false" in with_math
+
+    without = render_html("# Plain\n\ntext\n", tmp_path, "n")
+    assert "<script" not in without
+    assert "katex" not in without.lower()
+
+
+def test_math_page_makes_no_external_loads(tmp_path):
+    html = render_html(MATH_MD, tmp_path, "n")
+    for forbidden in ('src="http', "src='http", 'href="http', "url(http", "url(fonts/", "@import", "<link"):
+        assert forbidden not in html
+
+
+def test_title_and_caption_keep_math_source(tmp_path, png):
+    png(tmp_path / "f.png")
+    html = render_html("# The $\\pi$ policy\n\n![cap $\\theta$](f.png)\n", tmp_path, "n")
+    assert "<title>The \\pi policy</title>" in html
+    assert "<figcaption>cap \\theta</figcaption>" in html
+
+
+def test_math_in_code_is_code(tmp_path):
+    html = render_html("`$x$`\n\n```\n$$y$$\n```\n", tmp_path, "n")
+    assert "lecnotes-math" not in html
+    assert "<script" not in html
