@@ -7,7 +7,7 @@ from pathlib import Path
 
 from . import workdir
 from .errors import LecnotesError
-from .figures import TARGET_LONG_EDGE, crop_render, find_refs
+from .figures import TARGET_LONG_EDGE, crop_render, find_malformed, find_refs
 from .ingest import resolve_source
 from .instructions import render_instructions
 from .render import render_deck
@@ -110,7 +110,17 @@ def finish(root: Path) -> dict:
     refs = find_refs(body)
 
     # Validate every reference before writing anything, so a bad link leaves no
-    # half-built output behind.
+    # half-built output behind. Malformed links are reported first: fixing their
+    # form can change which slides they point at.
+    malformed = find_malformed(body)
+    if malformed:
+        raise LecnotesError(
+            "figure_malformed",
+            "NOTES.md has slide image links not written as "
+            "![caption](figures/slide-NNN.png): " + ", ".join(malformed),
+            bad_links=malformed,
+        )
+
     bad = [{"slide": n, "max": slides} for n in refs if not 1 <= n <= slides]
     if bad:
         raise LecnotesError(

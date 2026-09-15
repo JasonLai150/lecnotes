@@ -72,6 +72,30 @@ def test_nothing_is_written_when_validation_fails(prepared):
     assert not workdir.out_dir(prepared).exists()
 
 
+def test_malformed_figure_link_is_named(prepared):
+    write_notes(
+        prepared,
+        "![a](pages/slide-002.png)\n![ok](figures/slide-001.png)\n"
+        "![b](figures/slide-3.png)\n![c](pages/slide-002.png)\n",
+    )
+    with pytest.raises(LecnotesError) as exc:
+        finish(prepared)
+    assert exc.value.code == "figure_malformed"
+    assert exc.value.exit_code == 1
+    assert exc.value.detail["bad_links"] == ["pages/slide-002.png", "figures/slide-3.png"]
+    assert not workdir.out_dir(prepared).exists()
+
+
+def test_malformed_links_are_reported_before_out_of_range_ones(prepared):
+    """Both are checked before anything is written; malformed wins when both occur."""
+    write_notes(prepared, "![x](figures/slide-091.png)\n![y](pages/slide-002.png)\n")
+    with pytest.raises(LecnotesError) as exc:
+        finish(prepared)
+    assert exc.value.code == "figure_malformed"
+    assert exc.value.detail["bad_links"] == ["pages/slide-002.png"]
+    assert not workdir.out_dir(prepared).exists()
+
+
 def test_unwritten_notes_are_refused(prepared):
     with pytest.raises(LecnotesError) as exc:
         finish(prepared)

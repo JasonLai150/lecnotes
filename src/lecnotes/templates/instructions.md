@@ -40,6 +40,9 @@ Link it exactly like this, with the slide number zero-padded to three digits:
 
     ![a short caption describing what the figure shows](figures/slide-NNN.png)
 
+The path is `figures/`, not `pages/`, with no `./` prefix and no link title. Any
+other form of slide image link is rejected.
+
 Only link slides you actually looked at. The next step crops each linked slide to
 its content and copies it into place; linking a slide that does not exist is an
 error.

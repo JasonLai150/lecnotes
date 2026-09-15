@@ -68,10 +68,30 @@ def crop_render(pdf_path: Path, slide: int, dest: Path) -> None:
 
 
 # Exactly the form INSTRUCTIONS.md tells the agent to write. A workdir holds one
-# deck, so there is no deck path segment.
-REF_RE = re.compile(r"!\[([^\]]*)\]\(figures/slide-(\d{3})\.png\)")
+# deck, so there is no deck path segment. The number is written the way finish
+# names the file it crops (`slide-{n:03d}.png`): three digits, or more without a
+# leading zero, so `slide-1000.png` resolves and `slide-0001.png` cannot dangle.
+REF_RE = re.compile(r"!\[([^\]]*)\]\(figures/slide-(\d{3}|[1-9]\d{3,})\.png\)")
+
+# Any Markdown image, capturing its target. Used to catch slide links that are
+# close to REF_RE but not it, which would otherwise pass silently as broken images.
+IMAGE_RE = re.compile(r"!\[[^\]]*\]\(([^)]*)\)")
+SLIDE_PNG_RE = re.compile(r"slide-\d+\.png")
 
 
 def find_refs(markdown: str) -> list[int]:
     """Sorted, de-duplicated slide numbers referenced as figures."""
     return sorted({int(n) for _, n in REF_RE.findall(markdown)})
+
+
+def find_malformed(markdown: str) -> list[str]:
+    """Targets of slide image links not in the exact reference form.
+
+    In document order, de-duplicated.
+    """
+    bad: dict[str, None] = {}
+    for m in IMAGE_RE.finditer(markdown):
+        target = m.group(1)
+        if SLIDE_PNG_RE.search(target) and not REF_RE.fullmatch(m.group(0)):
+            bad.setdefault(target)
+    return list(bad)

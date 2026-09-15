@@ -37,3 +37,7 @@ def test_points_at_both_the_png_and_the_txt():
 
 def test_no_unreplaced_placeholders():
     assert "{" not in rendered().replace("{{", "").replace("}}", "")
+
+
+def test_warns_that_figure_links_use_figures_not_pages():
+    assert "not `pages/`" in rendered()
