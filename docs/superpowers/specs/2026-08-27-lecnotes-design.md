@@ -279,3 +279,64 @@ Recorded so they aren't rediscovered as surprises:
   multi-deck.
 - **The editorial half of `INSTRUCTIONS.md`.** Ships as a generic default; tuning
   it is editing one template file, not touching code.
+
+## Amendments (2026-09-14, from the final whole-branch review)
+
+These supersede the sections above wherever they conflict.
+
+**Install.** For real use the tool is installed as a command on PATH:
+`uv tool install git+https://github.com/JasonLai150/lecnotes` (or `uv tool install .`
+from a checkout). `uv sync` / `uv run` remain the development workflow. `python -m
+lecnotes` also works.
+
+**The finish command an agent is told to run.** `INSTRUCTIONS.md` tells the agent to run
+`lecnotes finish .` from inside the workdir, which is independent of where the workdir
+lives and survives moving it. The `next` field in `prep`'s output is
+`lecnotes finish <workdir path>` with the path shell-quoted.
+
+**Deck name.** Casefold the input stem, replace every run of characters that are not
+Unicode letters or digits (underscore counts as a separator) with a single `-`, strip
+leading/trailing `-`. If the result is empty, the deck name is `deck`.
+`lec8-txn,cc.pdf` → `lec8-txn-cc`; `Übung 3.pdf` → `übung-3`; `!!!.pdf` → `deck`.
+
+**Workdir identity.** A directory is a lecnotes workdir only if `manifest.json` parses
+as a JSON object containing the keys `deck`, `slides`, `pages`, and
+`rendered_long_edge`. Anything else — no manifest, unparseable JSON, a foreign
+`manifest.json` — is not a workdir: `finish` raises `not_a_workdir`, and `prep --force`
+refuses with `workdir_exists`.
+
+**prep validates before touching disk.** The input file's existence and openability
+are checked before the workdir is created or modified. A failed `prep` on a new target
+leaves nothing behind. `prep --force` whose source is the workdir's own `source.pdf`
+does not fail on copying a file onto itself.
+
+**Figure references.** Slide numbers are zero-padded to at least three digits
+(`slide-008.png`, `slide-1000.png`). `finish` also rejects *malformed* figure links:
+any Markdown image whose target contains `slide-<digits>.png` but is not exactly
+`figures/slide-NNN.png` (for example `pages/slide-002.png`, `./figures/slide-003.png`,
+`figures/slide-5.png`, or a link with a title). Malformed and out-of-range references
+are both checked before anything is written.
+
+**Error output.** Every JSON error includes the human `message`:
+`{"ok": false, "error": "<code>", "message": "<text>", ...detail}`. In `--json` mode an
+unexpected exception is reported as `internal_error` rather than a traceback with empty
+stdout. `conversion_failed` detail includes the tail of `soffice`'s stderr.
+
+Error codes, full table:
+
+| code | exit | raised by |
+|---|---|---|
+| `source_not_found` | 1 | prep, when the input path does not exist |
+| `unsupported_format` | 1 | prep, on `.key` or an unknown extension |
+| `invalid_pdf` | 1 | prep, when the PDF (given or converted) cannot be opened or has no pages |
+| `missing_converter` | 2 | prep, when `.pptx`/`.ppt` input finds no `soffice` |
+| `conversion_failed` | 2 | prep, when `soffice` runs but emits no PDF |
+| `workdir_exists` | 1 | prep, without `--force`, or with `--force` on a non-workdir |
+| `not_a_workdir` | 1 | finish, on a path that is not a workdir (see Workdir identity) |
+| `notes_empty` | 1 | finish, when `NOTES.md` is missing, empty, or still the stub |
+| `figure_out_of_range` | 1 | finish, on a reference past the last slide |
+| `figure_malformed` | 1 | finish, on a slide image link not in the exact form |
+| `internal_error` | 1 | cli, `--json` mode only, on any unexpected exception |
+
+`notes_empty` compares whitespace-stripped content with the stub, which also catches a
+missing or blank file — deliberately stricter than byte-identical.

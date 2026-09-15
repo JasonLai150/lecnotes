@@ -60,6 +60,9 @@ Start commit: e8bf4ef
 
 - Ruling: Task 12 argparse usage errors must exit 1, not argparse's default 2 — the spec binds exit 2 to missing external dependencies, and the plan's verbatim CLI code let argparse leak SystemExit(2) for missing args / unknown subcommands; `--help` and `--version` keep exit 0 — cost if wrong: none; an agent branching on exit 2 would otherwise tell users to install LibreOffice after a typo.
 
+- Ruling: Final review — amend the spec rather than defend it on seven gaps it had: install via `uv tool install`; INSTRUCTIONS tells agents `lecnotes finish .`; shell-quoted `next`; Unicode-aware slug with `deck` fallback; content-validated workdir identity; prep validates input before touching disk (new codes `source_not_found`, `invalid_pdf`); malformed figure links rejected (`figure_malformed`); JSON errors carry `message`; `internal_error` in --json mode; `\d{3,}` slide numbers — each reproduced by the final reviewer, most would bite the first real agent run — cost if wrong: four new error codes and a manifest-shape check in the contract.
+- Ruling: Final-review minors fixed in the same wave: SameFileError on self-source --force, soffice stderr in conversion_failed, sdist excludes sdd docs, SWIG warnings filtered, slug→output e2e test. Left as-is: layout literals outside workdir.py, deck_47 fixture, version duplication, symlinked pages/, all other deferred minors per the reviewer's triage — cost if wrong: small cleanup debt.
+
 ## Deferred minors
 
 
@@ -90,3 +93,4 @@ Start commit: e8bf4ef
 - Task 12: fix round 1/5 (1 addressed, 0 open — argparse usage errors exited 2; commits 280b517..c15c6e1)
 - Task 12: complete (commits ba0f4f3..c15c6e1, review clean after 1 fix round)
 - Task 13: complete (commits 126b515..8590591, review clean; ⚠️ README corpus stats resolved: match 4440 README's 1,226/1,240 text-layer and 758 figure counts)
+- Final review: With fixes — 0 critical, 7 important, 10 minor (e8bf4ef..ec5b3ff). One fix wave dispatched per final-fix-brief.md.
