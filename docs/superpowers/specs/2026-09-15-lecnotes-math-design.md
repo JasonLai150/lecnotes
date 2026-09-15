@@ -96,3 +96,20 @@ dependency.
   title/caption keep math source.
 - Notion: inline and block math byte-identical in the zip; title keeps math source.
 - Real run: regenerated CS 8803 lectures 2 and 3 export with rendered math.
+
+## Amendments (2026-09-15, from the final review)
+
+- **Blank lines end display math.** The dollar-math plugin is also configured with
+  `allow_blank_lines=False` (if the installed plugin exposes it), so an unclosed `$$`
+  swallows at most one paragraph, never later headings and figure links.
+  `$5 and $6` stays prose because of `allow_space=False` (a space before the closing
+  dollar), not `allow_digits`; a bare `$5` can still pair with later math, which is
+  why the instructions say to write `\$`.
+- **INSTRUCTIONS.md additions:** inside table cells, write `\mid`, `\vert`,
+  `\lVert … \rVert` instead of `|` or `\|` (the table rule splits cells on `|` and turns
+  `\|` into `|`); inside a list item, indent the `$$` lines to line up with the item's
+  text instead of flush left; keep math out of the `#` title.
+- **HTML:** image `alt` text keeps math source (via `inline_text`); display equations
+  don't double KaTeX's own vertical margin; the module docstring and README say
+  "no JavaScript unless the notes contain math (bundled KaTeX); nothing loads from the
+  network".

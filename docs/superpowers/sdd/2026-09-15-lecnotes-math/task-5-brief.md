@@ -82,3 +82,31 @@ Regenerate CS 8803 DRL lectures 2 and 3 (`DRL lectures/draft-lec-2-…notes`, `d
 - [ ] `uv run pytest -q` passes, no warnings
 - [ ] A math-free export has no `<script>`; a math export renders in a browser with KaTeX
 - [ ] The wheel contains the 20 KaTeX fonts
+
+---
+
+### Added by the controller: Task 2 review fix (fold into this task's commit)
+
+Task 2's review found that the Equations example in `src/lecnotes/templates/instructions.md` is indented 4 spaces (to mark it as an example), and an agent copying that indentation into NOTES.md produces an indented code block — the `$$` equation then renders as raw LaTeX, silently.
+
+- In the Equations section, change the sentence starting "Put each `$$` on its own line" to:
+  `Put each $$ on its own line, flush left with no indentation (the indentation above only marks the example), with a blank line before and after the block.`
+  Keep the `$$` inside backticks exactly as the existing sentence does: `` Put each `$$` on its own line, flush left with no indentation (the indentation above only marks the example), with a blank line before and after the block. ``
+- Add to `tests/test_instructions.py`:
+
+```python
+def test_display_math_must_be_flush_left():
+    out = rendered()
+    assert "flush left" in out
+```
+
+- Add to `tests/test_mdparse.py` (documents why the rule exists):
+
+```python
+def test_indented_display_math_is_a_code_block_not_math():
+    tokens = PARSER.parse("Text.\n\n    $$\n    x^2\n    $$\n")
+    assert not any(t.type == "math_block" for t in tokens)
+    assert any(t.type == "code_block" for t in tokens)
+```
+
+Stage these files in the same commit as the rest of Task 5.
