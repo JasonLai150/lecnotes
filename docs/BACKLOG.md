@@ -21,9 +21,17 @@ segmentation across decks, a course overview) is its own design.
 **Emphasis outlines.** CS4440 distilled review decks into "what the instructor
 stressed" and fed that to writers. Valuable, but inherently multi-deck.
 
-**Math rendering.** Equations stay as code spans in HTML and Notion. Rendering them
-(KaTeX inlined into the HTML, or Notion's `$...$`) would read better but means
-changing how agents are told to write formulas.
+**Math rendering (in progress, 2026-09-15).** Equations are typed as code spans
+(`E_{x~p}[f(x)]`), which is hard to read in Markdown and in the exports. They should
+be written as LaTeX and rendered: in Markdown viewers, in the HTML export, and in
+Notion.
+
+**Observability: token usage and run stats.** No visibility into what a notes run
+cost or produced: tokens spent by the writing agent, time taken, words written,
+slides covered vs skipped, figures linked. `lecnotes` never calls a model, so token
+counts have to come from the agent side (reported into the workdir, or read from the
+agent's logs); document-side stats (words, figures, slide coverage, equations) can be
+computed by `finish` itself.
 
 **HTML extras.** A table of contents, heading anchors, themes. Useful for
 4,000-word notes; not built.
