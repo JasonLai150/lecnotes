@@ -88,7 +88,15 @@ def _math_inline(self, tokens, idx, options, env):
     return f'<span class="lecnotes-math">{escapeHtml(tokens[idx].content)}</span>'
 
 
-def _math_display(self, tokens, idx, options, env):
+def _math_inline_display(self, tokens, idx, options, env):
+    # $$...$$ is an inline token: it can sit mid-paragraph. A <div> there would make
+    # the browser auto-close the <p>, so this stays a <span> — _MATH_CSS already gives
+    # .lecnotes-math-display `display: block`.
+    latex = escapeHtml(tokens[idx].content.strip())
+    return f'<span class="lecnotes-math lecnotes-math-display">{latex}</span>'
+
+
+def _math_block(self, tokens, idx, options, env):
     latex = escapeHtml(tokens[idx].content.strip())
     return f'<div class="lecnotes-math lecnotes-math-display">{latex}</div>\n'
 
@@ -120,8 +128,8 @@ def render_html(markdown: str, base_dir: Path, title_fallback: str) -> str:
     md.add_render_rule("paragraph_open", _paragraph_open)
     md.add_render_rule("paragraph_close", _paragraph_close)
     md.add_render_rule("math_inline", _math_inline)
-    md.add_render_rule("math_inline_double", _math_display)
-    md.add_render_rule("math_block", _math_display)
+    md.add_render_rule("math_inline_double", _math_inline_display)
+    md.add_render_rule("math_block", _math_block)
 
     base = Path(base_dir).resolve()
     tokens = md.parse(markdown)

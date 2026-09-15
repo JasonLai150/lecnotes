@@ -78,3 +78,31 @@ def test_indented_display_math_is_a_code_block_not_math():
     tokens = PARSER.parse("Text.\n\n    $$\n    x^2\n    $$\n")
     assert not any(t.type == "math_block" for t in tokens)
     assert any(t.type == "code_block" for t in tokens)
+
+
+def test_display_math_in_blockquote_strips_the_quote_marker():
+    md = "> text\n>\n> $$\n> \\nabla_\\theta J(\\theta)\n> $$\n"
+    blocks = [t for t in PARSER.parse(md) if t.type == "math_block"]
+    assert len(blocks) == 1
+    assert blocks[0].content.strip() == r"\nabla_\theta J(\theta)"
+    assert not any(line.startswith(">") for line in blocks[0].content.splitlines())
+
+
+def test_display_math_in_nested_blockquote_strips_both_markers():
+    blocks = [t for t in PARSER.parse("> > $$\n> > x^2\n> > $$\n") if t.type == "math_block"]
+    assert len(blocks) == 1
+    assert blocks[0].content.strip() == "x^2"
+    assert not any(line.startswith(">") for line in blocks[0].content.splitlines())
+
+
+def test_display_math_gt_inside_the_latex_is_kept():
+    # Only the leading blockquote markers are stripped, not a ">" the LaTeX itself uses.
+    blocks = [t for t in PARSER.parse("> $$\n> a > b\n> $$\n") if t.type == "math_block"]
+    assert len(blocks) == 1
+    assert blocks[0].content.strip() == "a > b"
+
+
+def test_top_level_display_math_is_unaffected_by_the_blockquote_fix():
+    blocks = [t for t in PARSER.parse("$$\n\\sum_t r_t\n$$\n") if t.type == "math_block"]
+    assert len(blocks) == 1
+    assert blocks[0].content.strip() == r"\sum_t r_t"

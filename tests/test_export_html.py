@@ -114,8 +114,16 @@ def test_inline_math_is_escaped_latex_in_a_span(tmp_path):
 
 def test_display_math_uses_a_display_div(tmp_path):
     html = render_html(MATH_MD, tmp_path, "n")
-    assert '<div class="lecnotes-math lecnotes-math-display">x^2</div>' in html
+    assert '<span class="lecnotes-math lecnotes-math-display">x^2</span>' in html
     assert '<div class="lecnotes-math lecnotes-math-display">\\nabla_\\theta J(\\theta)</div>' in html
+
+
+def test_double_dollar_mid_paragraph_stays_inline_html(tmp_path):
+    # A <div> here would make the browser auto-close the <p>, orphaning the trailing
+    # text and leaving a spurious empty <p></p> behind.
+    html = render_html("Inline $$x^2$$ here.\n", tmp_path, "n")
+    assert '<p>Inline <span class="lecnotes-math lecnotes-math-display">x^2</span> here.</p>' in html
+    assert "<div" not in html
 
 
 def test_katex_is_inlined_only_with_math(tmp_path):
@@ -147,3 +155,12 @@ def test_math_in_code_is_code(tmp_path):
     html = render_html("`$x$`\n\n```\n$$y$$\n```\n", tmp_path, "n")
     assert "lecnotes-math" not in html
     assert "<script" not in html
+
+
+def test_display_math_in_blockquote_has_no_stray_quote_marker(tmp_path):
+    html = render_html("> $$\n> \\nabla_\\theta J(\\theta)\n> $$\n", tmp_path, "n")
+    assert '<div class="lecnotes-math lecnotes-math-display">\\nabla_\\theta J(\\theta)</div>' in html
+    # Scoped to the rendered document body: the vendored KaTeX JS legitimately
+    # contains the literal string "&gt;" in its own HTML-escaping table.
+    body = html.split("<body>\n", 1)[1].split("<script>", 1)[0]
+    assert "&gt;" not in body
