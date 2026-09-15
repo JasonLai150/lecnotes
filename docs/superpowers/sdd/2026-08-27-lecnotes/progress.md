@@ -58,6 +58,8 @@ Start commit: e8bf4ef
 
 - Ruling: Task 9 keeps `src/lecnotes/templates/__init__.py` although the plan said add it only if the resource failed to load without it — the reviewer showed it loads without it under the editable install, but a regular package is the robust choice for importlib.resources across install modes (wheel, zipimport, older importlib namespace-package handling); the plan's conditional was the defect, not the file — cost if wrong: one empty file.
 
+- Ruling: Task 12 argparse usage errors must exit 1, not argparse's default 2 — the spec binds exit 2 to missing external dependencies, and the plan's verbatim CLI code let argparse leak SystemExit(2) for missing args / unknown subcommands; `--help` and `--version` keep exit 0 — cost if wrong: none; an agent branching on exit 2 would otherwise tell users to install LibreOffice after a typo.
+
 ## Deferred minors
 
 
@@ -71,6 +73,7 @@ Start commit: e8bf4ef
 - Task 9: minor (deferred): implementer report claimed no deviations while adding templates/__init__.py unconditionally (report accuracy).
 - Task 10: minor (deferred): (a) unused 'import json' in tests/test_prep.py; (b) prep --force removes pages/ before render_deck, so a render failure mid-way leaves an existing workdir with no pages/ (no atomicity).
 - Task 11: minor (deferred): no test for finish when NOTES.md was deleted after prep (missing-file branch).
+- Task 12 / suite-wide: minor (deferred): pytest output carries 5 DeprecationWarnings from pymupdf's SWIG bindings (SwigPyPacked/SwigPyObject/swigvarlink has no __module__), present since pymupdf was first imported; not pristine — could filter in [tool.pytest.ini_options].
 
 ## Progress
 - Task 1: complete (commits be1f4fd..263ad3e, review clean)
@@ -84,3 +87,5 @@ Start commit: e8bf4ef
 - Task 9: complete (commits f0a57de..ab1d8c2, 1 Important finding ruled on: keep templates/__init__.py, plan amended)
 - Task 10: complete (commits 02865ca..2b89564, review clean)
 - Task 11: complete (commits 43042b8..dae21a1, review clean)
+- Task 12: fix round 1/5 (1 addressed, 0 open — argparse usage errors exited 2; commits 280b517..c15c6e1)
+- Task 12: complete (commits ba0f4f3..c15c6e1, review clean after 1 fix round)
