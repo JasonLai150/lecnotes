@@ -6,3 +6,11 @@ __pycache__/
 
 # SDD review packages duplicate git history
 docs/superpowers/sdd/**/review-*.diff
+
+# macOS
+.DS_Store
+
+# Lecture decks are course material; never publish them
+*.pdf
+*.pptx
+*.ppt
