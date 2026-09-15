@@ -293,6 +293,12 @@ def _image_outside_root(tmp_path, synth, monkeypatch):
     return ["export", str(notes / "n.md"), "--to", "notion"]
 
 
+def _invalid_output(tmp_path, synth, monkeypatch):
+    md = tmp_path / "n.md"
+    md.write_text("x\n")
+    return ["export", str(md), "--to", "html", "-o", str(md)]
+
+
 ERROR_SCENARIOS = {
     "source_not_found": (_source_not_found, 1),
     "unsupported_format": (_unsupported_format, 1),
@@ -307,6 +313,7 @@ ERROR_SCENARIOS = {
     "not_finished": (_not_finished, 1),
     "image_not_found": (_image_not_found, 1),
     "image_outside_root": (_image_outside_root, 1),
+    "invalid_output": (_invalid_output, 1),
 }
 
 

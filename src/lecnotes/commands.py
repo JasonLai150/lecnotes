@@ -224,14 +224,31 @@ def export(target: Path, fmt: str, out: Path | None = None) -> dict:
                 outside=outside,
             )
         dest = Path(out) if out else base_dir / f"{source.stem}-notion.zip"
-        write_notion_zip(markdown, images, base_dir, dest, source.stem)
     elif fmt == "html":
         dest = Path(out) if out else base_dir / f"{source.stem}.html"
+    else:
+        raise ValueError(f"unknown export format: {fmt}")
+
+    if dest.resolve() == source.resolve():
+        raise LecnotesError(
+            "invalid_output",
+            f"exporting to {dest} would overwrite the Markdown being exported; "
+            "pass a different -o path",
+            path=str(dest),
+        )
+    if dest.is_dir():
+        raise LecnotesError(
+            "invalid_output",
+            f"{dest} is a directory; -o must be a file path",
+            path=str(dest),
+        )
+
+    if fmt == "notion":
+        write_notion_zip(markdown, images, base_dir, dest, source.stem)
+    else:
         html = render_html(markdown, base_dir, source.stem)
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_text(html, encoding="utf-8")
-    else:
-        raise ValueError(f"unknown export format: {fmt}")
 
     return {
         "ok": True,

@@ -134,3 +134,39 @@ def test_exporters_never_modify_the_markdown(finished):
     export(finished, "html")
     export(finished, "notion")
     assert md.read_bytes() == before
+
+
+@pytest.mark.parametrize("fmt", ["html", "notion"])
+def test_out_equal_to_source_is_rejected(tmp_path, fmt):
+    md = tmp_path / "n.md"
+    md.write_text("text\n", encoding="utf-8")
+    before = md.read_bytes()
+
+    with pytest.raises(LecnotesError) as exc:
+        export(md, fmt, out=md)
+    assert exc.value.code == "invalid_output"
+    assert md.read_bytes() == before
+
+
+def test_out_equal_to_workdir_output_is_rejected(finished):
+    out_md = workdir.out_dir(finished) / "lec1.md"
+    before = out_md.read_bytes()
+
+    with pytest.raises(LecnotesError) as exc:
+        export(finished, "notion", out=out_md)
+    assert exc.value.code == "invalid_output"
+    assert out_md.read_bytes() == before
+
+
+@pytest.mark.parametrize("fmt", ["html", "notion"])
+def test_out_is_existing_directory_is_rejected(tmp_path, fmt, png):
+    png(tmp_path / "ok.png")
+    md = tmp_path / "n.md"
+    md.write_text("![a](ok.png)\n", encoding="utf-8")
+    target_dir = tmp_path / "somedir"
+    target_dir.mkdir()
+
+    with pytest.raises(LecnotesError) as exc:
+        export(md, fmt, out=target_dir)
+    assert exc.value.code == "invalid_output"
+    assert list(target_dir.iterdir()) == []
