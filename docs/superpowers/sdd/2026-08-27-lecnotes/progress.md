@@ -69,3 +69,4 @@ Start commit: e8bf4ef
 - Task 1: complete (commits be1f4fd..263ad3e, review clean)
 - Task 2: complete (commits e9a6408..fe7a65b, review clean)
 - Task 3: complete (commits 25706ef..1bf4c21, review clean)
+- Task 4: complete (commits b32a8cd..a1be34d, review clean; deviation: crop_render rescales when pymupdf outward pixel rounding yields 1401px — reviewer reproduced and stress-tested; ⚠️ find_refs confirmed scheduled in Task 5)
