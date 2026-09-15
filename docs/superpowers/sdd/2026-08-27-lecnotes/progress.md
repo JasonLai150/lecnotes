@@ -69,6 +69,7 @@ Start commit: e8bf4ef
 - Task 6: minor (deferred): plan File Structure table lists workdir.create() but no brief defines or calls it; table is stale.
 - Task 8: minor (deferred, plan-mandated): (a) duplicated no-such-file guard in .pdf and .pptx branches of resolve_source; (b) test_pptx_conversion_success never asserts the soffice command shape; (c) conversion_failed discards soffice stderr, so real failures carry no diagnostic.
 - Task 9: minor (deferred): implementer report claimed no deviations while adding templates/__init__.py unconditionally (report accuracy).
+- Task 10: minor (deferred): (a) unused 'import json' in tests/test_prep.py; (b) prep --force removes pages/ before render_deck, so a render failure mid-way leaves an existing workdir with no pages/ (no atomicity).
 
 ## Progress
 - Task 1: complete (commits be1f4fd..263ad3e, review clean)
@@ -80,3 +81,4 @@ Start commit: e8bf4ef
 - Task 7: complete (commits 8664e53..5296c99, review clean; reviewer confirmed full-page renders never hit the 1401px rounding across 2000 random page sizes)
 - Task 8: complete (commits f462831..d4fcd6e, review clean)
 - Task 9: complete (commits f0a57de..ab1d8c2, 1 Important finding ruled on: keep templates/__init__.py, plan amended)
+- Task 10: complete (commits 02865ca..2b89564, review clean)
