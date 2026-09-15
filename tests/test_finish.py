@@ -85,6 +85,15 @@ def test_non_workdir_is_refused(tmp_path):
     assert exc.value.code == "not_a_workdir"
 
 
+@pytest.mark.parametrize("manifest", ['{"name": "my pwa"}', "{not json"])
+def test_directory_with_a_manifest_that_is_not_ours_is_refused(tmp_path, manifest):
+    (tmp_path / "manifest.json").write_text(manifest)
+    (tmp_path / "NOTES.md").write_text("# Notes\n")
+    with pytest.raises(LecnotesError) as exc:
+        finish(tmp_path)
+    assert exc.value.code == "not_a_workdir"
+
+
 def test_rebuild_clears_stale_figures(prepared):
     write_notes(prepared, "![a](figures/slide-002.png)\n")
     finish(prepared)

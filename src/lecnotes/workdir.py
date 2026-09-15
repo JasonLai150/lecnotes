@@ -62,15 +62,26 @@ def rel_txt(n: int) -> str:
     return f"{PAGES}/slide-{n:03d}.txt"
 
 
+# `manifest.json` is a common filename (web app manifests, for one), so its mere
+# presence proves nothing. These are the keys only prep writes together.
+MANIFEST_KEYS = frozenset({"deck", "slides", "pages", "rendered_long_edge"})
+
+
 def is_workdir(root: Path) -> bool:
-    return manifest_path(root).is_file()
+    """Whether `root` holds a manifest prep wrote. Never raises."""
+    path = manifest_path(root)
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, ValueError):
+        return False
+    return isinstance(data, dict) and MANIFEST_KEYS <= data.keys()
 
 
 def require_workdir(root: Path) -> None:
     if not is_workdir(root):
         raise LecnotesError(
             "not_a_workdir",
-            f"{root} is not a lecnotes workdir (no {MANIFEST})",
+            f"{root} is not a lecnotes workdir (no valid {MANIFEST})",
             path=str(root),
         )
 

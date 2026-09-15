@@ -23,10 +23,45 @@ def test_named_paths_hang_off_the_root(tmp_path):
     assert workdir.out_figures_dir(tmp_path) == tmp_path / "out" / "figures"
 
 
+VALID_MANIFEST = {"deck": "d", "slides": 1, "pages": [], "rendered_long_edge": 1400}
+
+
 def test_is_workdir_requires_a_manifest(tmp_path):
     assert not workdir.is_workdir(tmp_path)
-    workdir.save_manifest(tmp_path, {"deck": "d"})
+    workdir.save_manifest(tmp_path, VALID_MANIFEST)
     assert workdir.is_workdir(tmp_path)
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        '{"name": "my pwa"}',                                     # someone else's manifest.json
+        '{"deck": "d", "slides": 1, "pages": []}',                # missing a required key
+        "{not json",
+        '["deck", "slides", "pages", "rendered_long_edge"]',     # JSON, but not an object
+        "",
+    ],
+)
+def test_is_workdir_rejects_a_manifest_that_is_not_ours(tmp_path, content):
+    workdir.manifest_path(tmp_path).write_text(content, encoding="utf-8")
+    assert workdir.is_workdir(tmp_path) is False
+
+
+def test_is_workdir_rejects_undecodable_bytes(tmp_path):
+    workdir.manifest_path(tmp_path).write_bytes(b"\xff\xfe\x00garbage")
+    assert workdir.is_workdir(tmp_path) is False
+
+
+def test_is_workdir_rejects_a_manifest_directory(tmp_path):
+    workdir.manifest_path(tmp_path).mkdir()
+    assert workdir.is_workdir(tmp_path) is False
+
+
+def test_require_workdir_raises_on_a_foreign_manifest(tmp_path):
+    workdir.manifest_path(tmp_path).write_text('{"name": "my pwa"}', encoding="utf-8")
+    with pytest.raises(LecnotesError) as exc:
+        workdir.require_workdir(tmp_path)
+    assert exc.value.code == "not_a_workdir"
 
 
 def test_require_workdir_raises_when_absent(tmp_path):

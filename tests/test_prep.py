@@ -112,6 +112,25 @@ def test_force_re_renders_the_rest(synth, tmp_path):
     pdf = synth(tmp_path / "lec1.pdf", [{"text": "a"}])
     prep(pdf)
     root = tmp_path / "lec1.notes"
-    workdir.manifest_path(root).write_text("{}")
+    stale = workdir.load_manifest(root) | {"slides": 99}
+    workdir.save_manifest(root, stale)
     prep(pdf, force=True)
     assert workdir.load_manifest(root)["slides"] == 1
+
+
+def test_force_refuses_a_directory_with_a_foreign_manifest(synth, tmp_path):
+    """A web app's manifest.json must not pass for a workdir and cost it pages/."""
+    pdf = synth(tmp_path / "lec1.pdf", [{"text": "a"}])
+    app = tmp_path / "my-pwa"
+    (app / "pages").mkdir(parents=True)
+    (app / "pages" / "index.tsx").write_text("export default function Home() {}")
+    (app / "manifest.json").write_text('{"name": "my pwa"}')
+    before = sorted(str(p.relative_to(app)) for p in app.rglob("*"))
+
+    with pytest.raises(LecnotesError) as exc:
+        prep(pdf, out=app, force=True)
+
+    assert exc.value.code == "workdir_exists"
+    assert sorted(str(p.relative_to(app)) for p in app.rglob("*")) == before
+    assert (app / "pages" / "index.tsx").read_text() == "export default function Home() {}"
+    assert (app / "manifest.json").read_text() == '{"name": "my pwa"}'
