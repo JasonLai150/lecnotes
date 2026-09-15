@@ -87,3 +87,14 @@ def test_jpeg_uses_jpeg_mime(tmp_path, png):
     # The bytes are PNG, but the mime type follows the extension.
     png(tmp_path / "photo.JPG")
     assert 'src="data:image/jpeg;base64,' in render_html("![p](photo.JPG)\n", tmp_path, "n")
+
+
+def test_title_ignores_h1_inside_a_blockquote(tmp_path):
+    html = render_html("> # Quoted\n\n# Real\n", tmp_path, "notes")
+    assert "<title>Real</title>" in html
+
+
+def test_symlinked_image_mime_follows_the_src(tmp_path, png):
+    png(tmp_path / "blob.png").rename(tmp_path / "blob.bin")
+    (tmp_path / "fig.png").symlink_to(tmp_path / "blob.bin")
+    assert 'src="data:image/png;base64,' in render_html("![p](fig.png)\n", tmp_path, "n")

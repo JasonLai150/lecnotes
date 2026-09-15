@@ -67,3 +67,16 @@ def test_missing_images_lists_missing_and_unsupported_in_order(tmp_path, png):
 def test_directory_named_like_an_image_is_missing(tmp_path):
     (tmp_path / "dir.png").mkdir()
     assert missing_images(local_images("![a](dir.png)\n", tmp_path)) == ["dir.png"]
+
+
+def test_relpath_is_decoded_and_normalized(tmp_path):
+    images = local_images("![a](./figures/x.png) ![b](<figures/my slide.png>) ![c](a/../b.png)\n", tmp_path)
+    assert [i.relpath for i in images] == ["figures/x.png", "figures/my slide.png", "b.png"]
+
+
+def test_mime_follows_the_src_not_the_symlink_target(tmp_path, png):
+    png(tmp_path / "blob.png").rename(tmp_path / "blob.bin")
+    (tmp_path / "fig.png").symlink_to(tmp_path / "blob.bin")
+    images = local_images("![a](fig.png)\n", tmp_path)
+    assert images[0].mime == "image/png"
+    assert missing_images(images) == []

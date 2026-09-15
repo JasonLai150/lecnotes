@@ -3,6 +3,7 @@
 Returns findings only. Deciding which findings are errors is commands.py's job.
 """
 
+import posixpath
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import unquote
@@ -43,8 +44,14 @@ class LocalImage:
     path: Path  # absolute and resolved
 
     @property
+    def relpath(self) -> str:
+        """The link as written, percent-decoded and normalized (`./a/x.png` -> `a/x.png`)."""
+        return posixpath.normpath(unquote(self.src))
+
+    @property
     def mime(self) -> str | None:
-        return IMAGE_TYPES.get(self.path.suffix.lower())
+        # The link's extension, not the target's: a symlink keeps its own name.
+        return IMAGE_TYPES.get(posixpath.splitext(unquote(self.src))[1].lower())
 
 
 def local_images(markdown: str, base_dir: Path) -> list[LocalImage]:

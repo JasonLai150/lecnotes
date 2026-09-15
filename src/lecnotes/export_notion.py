@@ -4,15 +4,20 @@ Notion resolves relative image links inside an imported zip, so the package is
 just the Markdown plus its images at the same relative paths.
 """
 
+import os
 import re
+import unicodedata
 import zipfile
 from pathlib import Path
+from urllib.parse import unquote
 
 from .markdown_doc import LocalImage
 from .mdparse import PARSER
 
 TITLE_MAX = 100
-_UNSAFE_FILENAME_CHARS = re.compile(r'[/\\:*?"<>|]')
+_WHITESPACE = re.compile(r"\s+")
+_COLON = re.compile(r"\s*:\s*")
+_UNSAFE_FILENAME_CHARS = re.compile(r'[/\\*?"<>|]')
 
 
 def unwrap(markdown: str) -> str:
@@ -52,7 +57,12 @@ def unwrap(markdown: str) -> str:
 
 
 def sanitize_filename(text: str) -> str:
-    return _UNSAFE_FILENAME_CHARS.sub("-", text).strip()[:TITLE_MAX].strip()
+    """A page title safe to use as a file name on every platform."""
+    text = _WHITESPACE.sub(" ", text)  # also joins a setext heading's lines
+    text = "".join(c for c in text if not unicodedata.category(c).startswith("C"))
+    text = _COLON.sub(" - ", text)
+    text = _UNSAFE_FILENAME_CHARS.sub("-", text)
+    return text.strip()[:TITLE_MAX].strip()
 
 
 def split_title(markdown: str, fallback_stem: str) -> tuple[str, str]:
@@ -78,9 +88,23 @@ def split_title(markdown: str, fallback_stem: str) -> tuple[str, str]:
 
 
 def images_outside(images: list[LocalImage], base_dir: Path) -> list[str]:
-    """Srcs that climb out of base_dir; a zip entry cannot safely point there."""
-    base = Path(base_dir).resolve()
-    return [image.src for image in images if not image.path.is_relative_to(base)]
+    """Srcs that are absolute or climb out of base_dir; a zip entry cannot mirror them.
+
+    Judged on the link as written, because the zip stores each image at that
+    name: that is what the Markdown inside the zip will look for.
+    """
+    outside = []
+    for image in images:
+        src = unquote(image.src)
+        relpath = image.relpath
+        if (
+            os.path.isabs(src)
+            or src.startswith("/")
+            or relpath == ".."
+            or relpath.startswith("../")
+        ):
+            outside.append(image.src)
+    return outside
 
 
 def write_notion_zip(
@@ -90,16 +114,25 @@ def write_notion_zip(
     dest: Path,
     fallback_stem: str,
 ) -> None:
-    """Write the zip. Images must exist and lie inside base_dir."""
+    """Write the zip. Images must exist and not be outside base_dir (images_outside)."""
     stem, body = split_title(markdown, fallback_stem)
-    base = Path(base_dir).resolve()
     dest = Path(dest)
     dest.parent.mkdir(parents=True, exist_ok=True)
 
+    # Each image is stored under the name the Markdown links to, so the link
+    # resolves inside the zip even when the file on disk is a symlink. Two srcs
+    # can name one entry (figures/x.png and ./figures/x.png).
+    entries: dict[str, Path] = {}
+    for image in images:
+        entries.setdefault(image.relpath, image.path)
+
     tmp = dest.with_name(dest.name + ".tmp")
-    with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zf:
-        zf.writestr(f"{stem}.md", unwrap(body))
-        # Two srcs can name one file (figures/x.png and ./figures/x.png).
-        for path in dict.fromkeys(image.path for image in images):
-            zf.write(path, path.relative_to(base).as_posix())
-    tmp.replace(dest)
+    try:
+        with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr(f"{stem}.md", unwrap(body))
+            for relpath, path in entries.items():
+                zf.write(path, relpath)
+        tmp.replace(dest)
+    except BaseException:
+        tmp.unlink(missing_ok=True)
+        raise

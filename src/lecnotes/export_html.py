@@ -5,6 +5,7 @@ scripts, no requests. It renders the same offline, forever.
 """
 
 import base64
+import posixpath
 from pathlib import Path
 from urllib.parse import unquote
 
@@ -64,8 +65,9 @@ hr { border: none; border-top: 1px solid var(--rule); margin: 2.5em 0; }
 """
 
 
-def _data_uri(path: Path) -> str:
-    mime = IMAGE_TYPES[path.suffix.lower()]
+def _data_uri(src: str, path: Path) -> str:
+    # The type follows the link's extension, as in markdown_doc.LocalImage.mime.
+    mime = IMAGE_TYPES[posixpath.splitext(src)[1].lower()]
     return f"data:{mime};base64,{base64.b64encode(path.read_bytes()).decode('ascii')}"
 
 
@@ -95,7 +97,12 @@ def render_html(markdown: str, base_dir: Path, title_fallback: str) -> str:
     title = None
 
     for i, token in enumerate(tokens):
-        if title is None and token.type == "heading_open" and token.tag == "h1":
+        if (
+            title is None
+            and token.type == "heading_open"
+            and token.tag == "h1"
+            and token.level == 0  # not a heading quoted inside a blockquote or list
+        ):
             title = md.renderer.renderInlineAsText(tokens[i + 1].children or [], md.options, {})
 
         if token.type != "inline" or not token.children:
@@ -105,7 +112,8 @@ def render_html(markdown: str, base_dir: Path, title_fallback: str) -> str:
             if child.type == "image":
                 src = child.attrGet("src") or ""
                 if src and not is_external(src):
-                    child.attrSet("src", _data_uri((base / unquote(src)).resolve()))
+                    path = unquote(src)
+                    child.attrSet("src", _data_uri(path, (base / path).resolve()))
 
         opener, closer = tokens[i - 1], tokens[i + 1]
         only_an_image = len(token.children) == 1 and token.children[0].type == "image"
