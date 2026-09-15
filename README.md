@@ -53,6 +53,27 @@ content, and writes `lec13.notes/out/lec13.md` alongside `out/figures/`. From
 anywhere else, pass the workdir path instead; `prep` prints the exact command,
 with the path shell-quoted, as its `next` step.
 
+## Export
+
+The Markdown `finish` writes is the source of truth. `export` turns it into
+something easier to read or share, without changing it:
+
+```sh
+lecnotes export lec13.notes --to html     # lec13.notes/out/lec13.html
+lecnotes export lec13.notes --to notion   # lec13.notes/out/lec13-notion.zip
+```
+
+- **HTML** is one self-contained file: figures are embedded, styles are inline,
+  there is no JavaScript and nothing loads from the network. Open it in any
+  browser, or print it to PDF.
+- **Notion**: in Notion, go to Settings → Import → Markdown and choose the zip.
+  The page is named after the notes' title, and figures come through. (Pasting
+  the `.md` alone loses the images; the zip keeps them together.)
+
+`export` also accepts any `.md` file, resolving images relative to it, and `-o`
+sets the output path. On a workdir it refuses to export notes that have changed
+since the last `finish`, so you never share a stale copy.
+
 ## For agents
 
 Both commands take `--json`:
