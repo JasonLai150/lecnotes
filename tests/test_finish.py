@@ -96,6 +96,21 @@ def test_malformed_links_are_reported_before_out_of_range_ones(prepared):
     assert not workdir.out_dir(prepared).exists()
 
 
+def test_bracket_in_caption_does_not_drop_the_figure(prepared):
+    write_notes(prepared, "# T\n\n![E_{x~p}[f(x)] estimator](figures/slide-003.png)\n")
+    result = finish(prepared)
+    assert result["figures_resolved"] == 1
+    assert (workdir.out_figures_dir(prepared) / "slide-003.png").is_file()
+
+
+def test_unbalanced_bracket_in_caption_is_malformed(prepared):
+    write_notes(prepared, "![maps [0,1) to R](figures/slide-004.png)\n")
+    with pytest.raises(LecnotesError) as exc:
+        finish(prepared)
+    assert exc.value.code == "figure_malformed"
+    assert not workdir.out_dir(prepared).exists()
+
+
 def test_unwritten_notes_are_refused(prepared):
     with pytest.raises(LecnotesError) as exc:
         finish(prepared)

@@ -117,7 +117,9 @@ def finish(root: Path) -> dict:
         raise LecnotesError(
             "figure_malformed",
             "NOTES.md has slide image links not written as "
-            "![caption](figures/slide-NNN.png): " + ", ".join(malformed),
+            "![caption](figures/slide-NNN.png): " + ", ".join(malformed) +
+            ". Usual causes: an unbalanced [ or ] in the caption, a missing !, "
+            "or a path other than figures/slide-NNN.png.",
             bad_links=malformed,
         )
 

@@ -1,9 +1,12 @@
 """Content-box detection and cropped figure rendering."""
 
 import re
+from collections.abc import Iterator
 from pathlib import Path
 
 import pymupdf
+from markdown_it import MarkdownIt
+from markdown_it.token import Token
 
 PAD = 10  # points of breathing room around the content box
 BACKDROP_RATIO = 0.95
@@ -71,27 +74,74 @@ def crop_render(pdf_path: Path, slide: int, dest: Path) -> None:
 # deck, so there is no deck path segment. The number is written the way finish
 # names the file it crops (`slide-{n:03d}.png`): three digits, or more without a
 # leading zero, so `slide-1000.png` resolves and `slide-0001.png` cannot dangle.
-REF_RE = re.compile(r"!\[([^\]]*)\]\(figures/slide-(\d{3}|[1-9]\d{3,})\.png\)")
+STRICT_SRC_RE = re.compile(r"figures/slide-(\d{3}|[1-9]\d{3,})\.png")
 
-# Any Markdown image, capturing its target. Used to catch slide links that are
-# close to REF_RE but not it, which would otherwise pass silently as broken images.
-IMAGE_RE = re.compile(r"!\[[^\]]*\]\(([^)]*)\)")
+# Looser: any string that merely looks like a slide image target, used to spot
+# links that are close to STRICT_SRC_RE but not it, so they are reported rather
+# than silently ignored.
 SLIDE_PNG_RE = re.compile(r"slide-\d+\.png")
+
+# Matches a `slide-NNN.png`-shaped run of non-whitespace, for pulling the
+# offending fragment out of prose or markup that failed to parse as a link at
+# all (an unclosed bracket, a bare filename mentioned in text, etc).
+LOOSE_TEXT_RE = re.compile(r"\S*slide-\d+\.png\S*")
+
+# One shared parser instance: markdown-it instances are stateful during parsing
+# but safe to reuse across calls, and this is what the export feature can reuse
+# later too.
+_MD = MarkdownIt("commonmark", {"html": False})
+
+
+def _iter_link_tokens(markdown: str) -> Iterator[Token]:
+    """Yield inline `image`, `link_open`, and `text` tokens, in document order.
+
+    These are the only token types that can carry a slide figure reference (or
+    the text of one that failed to parse as a link). `code_inline`, `fence`,
+    and `code_block` tokens are never yielded, so example links inside inline
+    code or fenced code blocks are not treated as figure references.
+    """
+    for block in _MD.parse(markdown):
+        if block.type != "inline" or not block.children:
+            continue
+        for token in block.children:
+            if token.type in ("image", "link_open", "text"):
+                yield token
 
 
 def find_refs(markdown: str) -> list[int]:
     """Sorted, de-duplicated slide numbers referenced as figures."""
-    return sorted({int(n) for _, n in REF_RE.findall(markdown)})
+    nums: set[int] = set()
+    for token in _iter_link_tokens(markdown):
+        if token.type != "image":
+            continue
+        src = token.attrGet("src") or ""
+        match = STRICT_SRC_RE.fullmatch(src)
+        if match:
+            nums.add(int(match.group(1)))
+    return sorted(nums)
 
 
 def find_malformed(markdown: str) -> list[str]:
-    """Targets of slide image links not in the exact reference form.
+    """Slide image links not in the exact reference form.
 
-    In document order, de-duplicated.
+    In document order, de-duplicated. Covers three ways a link can be close to
+    a valid figure reference without being one: an image whose src is not
+    exactly `figures/slide-NNN.png` (wrong directory, `./` prefix, wrong
+    padding, ...); a link missing its leading `!` (so it parses as a plain
+    link, not an image); and markup that failed to parse as a link at all
+    (an unbalanced `[` or `]` in the caption leaves raw `![...` text behind).
     """
     bad: dict[str, None] = {}
-    for m in IMAGE_RE.finditer(markdown):
-        target = m.group(1)
-        if SLIDE_PNG_RE.search(target) and not REF_RE.fullmatch(m.group(0)):
-            bad.setdefault(target)
+    for token in _iter_link_tokens(markdown):
+        if token.type == "image":
+            src = token.attrGet("src") or ""
+            if SLIDE_PNG_RE.search(src) and not STRICT_SRC_RE.fullmatch(src):
+                bad.setdefault(src)
+        elif token.type == "link_open":
+            href = token.attrGet("href") or ""
+            if SLIDE_PNG_RE.search(href):
+                bad.setdefault(href)
+        elif token.type == "text":
+            for m in LOOSE_TEXT_RE.finditer(token.content):
+                bad.setdefault(m.group(0))
     return list(bad)
