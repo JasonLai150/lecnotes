@@ -1,3 +1,4 @@
+import os
 import zipfile
 
 import pytest
@@ -170,3 +171,105 @@ def test_out_is_existing_directory_is_rejected(tmp_path, fmt, png):
         export(md, fmt, out=target_dir)
     assert exc.value.code == "invalid_output"
     assert list(target_dir.iterdir()) == []
+
+
+def _case_insensitive(directory):
+    probe = directory / "a.txt"
+    probe.write_text("x")
+    try:
+        return (directory / "A.TXT").exists()
+    finally:
+        probe.unlink()
+
+
+@pytest.mark.parametrize("fmt", ["html", "notion"])
+def test_out_differing_only_in_case_is_rejected(tmp_path, fmt):
+    if not _case_insensitive(tmp_path):
+        pytest.skip("tmp filesystem is case-sensitive; N.MD is a different file")
+    md = tmp_path / "n.md"
+    md.write_text("text\n", encoding="utf-8")
+    before = md.read_bytes()
+
+    with pytest.raises(LecnotesError) as exc:
+        export(md, fmt, out=tmp_path / "N.MD")
+    assert exc.value.code == "invalid_output"
+    assert md.read_bytes() == before
+
+
+@pytest.mark.parametrize("link", ["hard", "symlink"])
+@pytest.mark.parametrize("fmt", ["html", "notion"])
+def test_out_linked_to_source_is_rejected(tmp_path, fmt, link):
+    md = tmp_path / "n.md"
+    md.write_text("text\n", encoding="utf-8")
+    before = md.read_bytes()
+    alias = tmp_path / "alias.md"
+    if link == "hard":
+        os.link(md, alias)
+    else:
+        alias.symlink_to(md)
+
+    with pytest.raises(LecnotesError) as exc:
+        export(md, fmt, out=alias)
+    assert exc.value.code == "invalid_output"
+    assert md.read_bytes() == before
+
+
+@pytest.mark.parametrize("below", ["out.html", "sub/out.html"])
+@pytest.mark.parametrize("fmt", ["html", "notion"])
+def test_out_under_a_file_is_rejected(tmp_path, fmt, below):
+    md = tmp_path / "n.md"
+    md.write_text("text\n", encoding="utf-8")
+    blocker = tmp_path / "blocker"
+    blocker.write_text("not a dir")
+
+    with pytest.raises(LecnotesError) as exc:
+        export(md, fmt, out=blocker / below)
+    assert exc.value.code == "invalid_output"
+    assert blocker.read_text() == "not a dir"
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["blocker", "n.md"]
+
+
+@pytest.mark.parametrize("fmt", ["html", "notion"])
+def test_out_equal_to_workdir_notes_is_rejected(finished, fmt):
+    notes = workdir.notes_path(finished)
+    before = notes.read_bytes()
+
+    with pytest.raises(LecnotesError) as exc:
+        export(finished, fmt, out=notes)
+    assert exc.value.code == "invalid_output"
+    assert notes.read_bytes() == before
+
+
+def test_notes_differing_message_offers_both_remedies(finished):
+    workdir.notes_path(finished).write_text("# Lecture One\n\nnewer\n", encoding="utf-8")
+    with pytest.raises(LecnotesError) as exc:
+        export(finished, "html")
+    message = exc.value.message
+    out_md = str(workdir.out_dir(finished) / "lec1.md")
+    assert "NOTES.md" in message and out_md in message
+    assert "lecnotes finish" in message
+    assert "lecnotes export" in message
+
+
+def test_image_not_found_message_separates_missing_from_unsupported(tmp_path, png):
+    (tmp_path / "c.bmp").write_bytes(b"BM")
+    md = tmp_path / "n.md"
+    md.write_text("![a](a.png) ![c](c.bmp) ![b](b.png)\n")
+    with pytest.raises(LecnotesError) as exc:
+        export(md, "html")
+    assert exc.value.code == "image_not_found"
+    assert exc.value.detail["missing"] == ["a.png", "c.bmp", "b.png"]
+    assert exc.value.detail["unsupported"] == ["c.bmp"]
+    assert exc.value.message == (
+        "these images cannot be used: missing: a.png, b.png; "
+        "unsupported type (use png, jpg, jpeg, gif, svg, webp): c.bmp"
+    )
+
+
+def test_image_not_found_message_omits_empty_groups(tmp_path):
+    md = tmp_path / "n.md"
+    md.write_text("![a](a.png)\n")
+    with pytest.raises(LecnotesError) as exc:
+        export(md, "html")
+    assert exc.value.message == "these images cannot be used: missing: a.png"
+    assert exc.value.detail["unsupported"] == []

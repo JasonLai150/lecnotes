@@ -1,4 +1,4 @@
-"""Orchestration for the two verbs. Returns plain dicts; cli.py does the shaping."""
+"""Orchestration for prep, finish and export. Returns plain dicts; cli.py does the shaping."""
 
 import os
 import shlex
@@ -13,7 +13,7 @@ from .export_notion import images_outside, write_notion_zip
 from .figures import TARGET_LONG_EDGE, crop_render, find_malformed, find_refs
 from .ingest import resolve_source
 from .instructions import render_instructions
-from .markdown_doc import local_images, missing_images
+from .markdown_doc import IMAGE_TYPES, local_images, missing_images
 from .render import render_deck
 
 NOTES_STUB = (
@@ -154,8 +154,8 @@ def finish(root: Path) -> dict:
     }
 
 
-def _export_source(target: Path) -> Path:
-    """The Markdown file to export, from a workdir or a .md path."""
+def _export_source(target: Path) -> tuple[Path, Path | None]:
+    """The Markdown file to export, and the workdir it came from (None for a .md path)."""
     if not target.exists():
         raise LecnotesError(
             "source_not_found", f"no such file or directory: {target}", path=str(target)
@@ -183,11 +183,13 @@ def _export_source(target: Path) -> Path:
         ):
             raise LecnotesError(
                 "not_finished",
-                "NOTES.md has changed since the last finish; "
-                "run `lecnotes finish` again before exporting",
+                f"NOTES.md and {markdown} differ. If NOTES.md is the version to keep, "
+                "run `lecnotes finish` on this workdir first. If "
+                f"out/{markdown.name} was edited on purpose, export it directly: "
+                f"`lecnotes export {shlex.quote(str(markdown))} --to ...`",
                 path=str(target),
             )
-        return markdown
+        return markdown, target
 
     if target.suffix.lower() != ".md":
         raise LecnotesError(
@@ -195,11 +197,15 @@ def _export_source(target: Path) -> Path:
             f"cannot export {target.name}; pass a lecnotes workdir or a .md file",
             path=str(target),
         )
-    return target
+    return target, None
+
+
+def _same_file(a: Path, b: Path) -> bool:
+    return a.exists() and b.exists() and os.path.samefile(a, b)
 
 
 def export(target: Path, fmt: str, out: Path | None = None) -> dict:
-    source = _export_source(Path(target))
+    source, root = _export_source(Path(target))
     markdown = source.read_text(encoding="utf-8")
     base_dir = source.parent
     images = local_images(markdown, base_dir)
@@ -207,11 +213,19 @@ def export(target: Path, fmt: str, out: Path | None = None) -> dict:
     # Validate everything before writing anything.
     missing = missing_images(images)
     if missing:
+        unsupported = [image.src for image in images if image.mime is None]
+        groups = []
+        absent = [src for src in missing if src not in unsupported]
+        if absent:
+            groups.append("missing: " + ", ".join(absent))
+        if unsupported:
+            types = ", ".join(ext.lstrip(".") for ext in IMAGE_TYPES)
+            groups.append(f"unsupported type (use {types}): " + ", ".join(unsupported))
         raise LecnotesError(
             "image_not_found",
-            "these images are missing or not a supported type "
-            "(png, jpg, jpeg, gif, svg, webp): " + ", ".join(missing),
+            "these images cannot be used: " + "; ".join(groups),
             missing=missing,
+            unsupported=unsupported,
         )
 
     if fmt == "notion":
@@ -229,10 +243,19 @@ def export(target: Path, fmt: str, out: Path | None = None) -> dict:
     else:
         raise ValueError(f"unknown export format: {fmt}")
 
-    if dest.resolve() == source.resolve():
+    # By file identity, not path string: case-insensitive filesystems, hard links
+    # and symlinks all give one file several names.
+    if _same_file(dest, source):
         raise LecnotesError(
             "invalid_output",
             f"exporting to {dest} would overwrite the Markdown being exported; "
+            "pass a different -o path",
+            path=str(dest),
+        )
+    if root is not None and _same_file(dest, workdir.notes_path(root)):
+        raise LecnotesError(
+            "invalid_output",
+            f"exporting to {dest} would overwrite this workdir's NOTES.md; "
             "pass a different -o path",
             path=str(dest),
         )
@@ -240,6 +263,14 @@ def export(target: Path, fmt: str, out: Path | None = None) -> dict:
         raise LecnotesError(
             "invalid_output",
             f"{dest} is a directory; -o must be a file path",
+            path=str(dest),
+        )
+    # The nearest ancestor that exists is where mkdir would start; it must be a directory.
+    ancestor = next(p for p in dest.absolute().parents if p.exists())
+    if not ancestor.is_dir():
+        raise LecnotesError(
+            "invalid_output",
+            f"{ancestor} is a file, not a directory; -o must be a path inside a directory",
             path=str(dest),
         )
 
