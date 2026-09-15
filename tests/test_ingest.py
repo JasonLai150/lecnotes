@@ -1,5 +1,6 @@
 from types import SimpleNamespace
 
+import pymupdf
 import pytest
 
 from lecnotes.errors import LecnotesError
@@ -21,10 +22,63 @@ def test_deck_name_is_slugged(synth, tmp_path):
     assert resolve_source(pdf, tmp_path / "tmp").deck == "lec8-txn-cc"
 
 
-def test_missing_file_is_a_usage_error(tmp_path):
+ZERO_PAGE_PDF = (
+    b"%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
+    b"2 0 obj<</Type/Pages/Kids[]/Count 0>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n"
+)
+
+
+@pytest.mark.parametrize("name", ["nope.pdf", "nope.pptx", "nope.ppt"])
+def test_missing_file_is_source_not_found(tmp_path, name):
     with pytest.raises(LecnotesError) as exc:
-        resolve_source(tmp_path / "nope.pdf", tmp_path / "tmp")
-    assert exc.value.code == "unsupported_format"
+        resolve_source(tmp_path / name, tmp_path / "tmp")
+    assert exc.value.code == "source_not_found"
+    assert exc.value.exit_code == 1
+    assert exc.value.detail["path"] == str(tmp_path / name)
+
+
+def test_corrupt_pdf_is_invalid_pdf(tmp_path):
+    broken = tmp_path / "broken.pdf"
+    broken.write_bytes(b"not a pdf")
+    with pytest.raises(LecnotesError) as exc:
+        resolve_source(broken, tmp_path / "tmp")
+    assert exc.value.code == "invalid_pdf"
+    assert exc.value.exit_code == 1
+
+
+def test_zero_page_pdf_is_invalid_pdf(tmp_path):
+    empty = tmp_path / "empty.pdf"
+    empty.write_bytes(ZERO_PAGE_PDF)
+    with pytest.raises(LecnotesError) as exc:
+        resolve_source(empty, tmp_path / "tmp")
+    assert exc.value.code == "invalid_pdf"
+
+
+def test_password_protected_pdf_is_invalid_pdf(tmp_path):
+    locked = tmp_path / "locked.pdf"
+    doc = pymupdf.open()
+    doc.new_page()
+    doc.save(locked, encryption=pymupdf.PDF_ENCRYPT_AES_256, user_pw="u", owner_pw="o")
+    doc.close()
+    with pytest.raises(LecnotesError) as exc:
+        resolve_source(locked, tmp_path / "tmp")
+    assert exc.value.code == "invalid_pdf"
+
+
+def test_converted_pdf_that_will_not_open_is_invalid_pdf(tmp_path, monkeypatch):
+    tmpdir = tmp_path / "tmp"
+    monkeypatch.setattr("lecnotes.ingest.shutil.which", lambda _: "/usr/bin/soffice")
+
+    def fake_run(cmd, **kwargs):
+        (tmpdir / "lec1.pdf").write_bytes(b"truncated garbage")
+        return SimpleNamespace(returncode=0, stdout=b"", stderr=b"")
+
+    monkeypatch.setattr("lecnotes.ingest.subprocess.run", fake_run)
+    pptx = tmp_path / "lec1.pptx"
+    pptx.write_bytes(b"stub")
+    with pytest.raises(LecnotesError) as exc:
+        resolve_source(pptx, tmpdir)
+    assert exc.value.code == "invalid_pdf"
 
 
 def test_keynote_points_at_keynote_export(tmp_path):

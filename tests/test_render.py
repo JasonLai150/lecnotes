@@ -1,4 +1,5 @@
 import pymupdf
+import pytest
 
 from lecnotes import workdir
 from lecnotes.render import has_figure, render_deck
@@ -56,3 +57,12 @@ def test_rows_carry_n_paths_chars_and_figure_flag(synth, tmp_path):
 def test_blank_page_reports_zero_chars(synth, tmp_path):
     rows = render_deck(synth(tmp_path / "d.pdf", [{"blank": True}]), tmp_path / "wd")
     assert rows[0]["chars"] == 0
+
+
+def test_unopenable_pdf_creates_no_pages_dir(tmp_path):
+    broken = tmp_path / "broken.pdf"
+    broken.write_bytes(b"not a pdf")
+    root = tmp_path / "wd"
+    with pytest.raises(pymupdf.FileDataError):
+        render_deck(broken, root)
+    assert not workdir.pages_dir(root).exists()

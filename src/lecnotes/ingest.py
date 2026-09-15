@@ -5,6 +5,8 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+import pymupdf
+
 from .errors import LecnotesError
 from .naming import slugify
 
@@ -49,10 +51,35 @@ def _convert(path: Path, tmpdir: Path) -> Path:
     return out
 
 
+def _check_pdf(pdf: Path, source: Path) -> None:
+    """Refuse a PDF prep could not render, before anything is written to disk."""
+    try:
+        doc = pymupdf.open(pdf)
+    except Exception as err:  # pymupdf raises several unrelated types for bad input
+        raise LecnotesError(
+            "invalid_pdf",
+            f"{source.name} could not be opened as a PDF ({err})",
+            path=str(source),
+        ) from err
+    try:
+        if doc.needs_pass:
+            problem = "is password-protected"
+        elif doc.page_count < 1:
+            problem = "has no pages"
+        else:
+            return
+    finally:
+        doc.close()
+    raise LecnotesError("invalid_pdf", f"{source.name} {problem}", path=str(source))
+
+
 def resolve_source(path: Path, tmpdir: Path) -> SourceInfo:
     """Return a PDF ready to render, converting from PowerPoint if needed."""
     path = Path(path)
     suffix = path.suffix.lower()
+
+    if not path.is_file():
+        raise LecnotesError("source_not_found", f"no such file: {path}", path=str(path))
 
     if suffix == ".key":
         raise LecnotesError(
@@ -63,12 +90,8 @@ def resolve_source(path: Path, tmpdir: Path) -> SourceInfo:
         )
 
     if suffix == ".pdf":
-        if not path.is_file():
-            raise LecnotesError("unsupported_format", f"no such file: {path}", path=str(path))
         pdf, converted = path, False
     elif suffix in CONVERTIBLE:
-        if not path.is_file():
-            raise LecnotesError("unsupported_format", f"no such file: {path}", path=str(path))
         pdf, converted = _convert(path, tmpdir), True
     else:
         raise LecnotesError(
@@ -76,6 +99,8 @@ def resolve_source(path: Path, tmpdir: Path) -> SourceInfo:
             f"unsupported input {suffix or '(no extension)'}; expected .pdf, .pptx, or .ppt",
             suffix=suffix,
         )
+
+    _check_pdf(pdf, path)
 
     return SourceInfo(
         pdf=pdf,

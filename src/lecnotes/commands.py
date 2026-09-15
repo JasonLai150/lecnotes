@@ -1,5 +1,6 @@
 """Orchestration for the two verbs. Returns plain dicts; cli.py does the shaping."""
 
+import os
 import shutil
 import tempfile
 from pathlib import Path
@@ -46,7 +47,10 @@ def prep(source: Path, out: Path | None = None, force: bool = False) -> dict:
             shutil.rmtree(workdir.pages_dir(root))
 
         rows = render_deck(info.pdf, root)
-        shutil.copyfile(info.pdf, workdir.source_path(root))
+        dest = workdir.source_path(root)
+        # Re-prepping from the workdir's own source.pdf: it is already in place.
+        if not (dest.exists() and os.path.samefile(info.pdf, dest)):
+            shutil.copyfile(info.pdf, dest)
 
     manifest = {
         "deck": info.deck,

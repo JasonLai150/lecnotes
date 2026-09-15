@@ -22,10 +22,10 @@ def has_figure(page: pymupdf.Page) -> bool:
 
 def render_deck(pdf_path: Path, root: Path) -> list[dict]:
     """Render every page into the workdir; return the manifest rows."""
-    workdir.pages_dir(root).mkdir(parents=True, exist_ok=True)
-
     doc = pymupdf.open(pdf_path)
     try:
+        # Only once the document has opened, so a bad PDF leaves no pages/ behind.
+        workdir.pages_dir(root).mkdir(parents=True, exist_ok=True)
         rows = []
         for i, page in enumerate(doc, start=1):
             zoom = TARGET_LONG_EDGE / max(page.rect.width, page.rect.height)
