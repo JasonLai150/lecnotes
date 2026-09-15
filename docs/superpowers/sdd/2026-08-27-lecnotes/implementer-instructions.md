@@ -15,7 +15,7 @@ Do not read the whole plan file.
 - `uv` is at ~/.local/bin/uv and the environment is synced. Run tests with `uv run pytest`.
 - Commit on `main`. Do NOT push. Do not commit anything under docs/.
 - Every commit message must end with exactly these two lines:
-  Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+  Co-Authored-By: Claude <your model name> <noreply@anthropic.com>   (name the model you are running as)
   Claude-Session: https://claude.ai/code/session_01YAyFL8DWShjsveMRqBQ4Dy
 
 ## Process
