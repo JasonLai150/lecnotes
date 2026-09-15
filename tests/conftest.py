@@ -59,3 +59,18 @@ def deck_47(tmp_path):
     specs = [{"text": f"Slide {i}"} for i in range(1, 48)]
     specs[7] = {"text": "Slide 8", "many_lines": 20}  # slide 8 carries a figure
     return synth_pdf(tmp_path / "lec1.pdf", specs)
+
+
+def make_png(path, width=4, height=3) -> Path:
+    """A tiny real PNG, so image tests never need checked-in binaries."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    pix = pymupdf.Pixmap(pymupdf.csRGB, pymupdf.IRect(0, 0, width, height), False)
+    pix.clear_with(200)
+    pix.save(path)
+    return path
+
+
+@pytest.fixture
+def png():
+    return make_png
