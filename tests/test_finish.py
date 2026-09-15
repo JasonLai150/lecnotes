@@ -92,3 +92,13 @@ def test_rebuild_clears_stale_figures(prepared):
     finish(prepared)
     names = sorted(p.name for p in workdir.out_figures_dir(prepared).glob("*.png"))
     assert names == ["slide-004.png"]
+
+
+def test_punctuated_deck_name_flows_through_to_the_output_file(synth, tmp_path):
+    pdf = synth(tmp_path / "lec8-txn,cc.pdf", [{"text": "Locks", "small_box": (100, 100, 300, 220)}])
+    root = tmp_path / "lec8-txn-cc.notes"
+    assert prep(pdf)["workdir"] == str(root)
+    write_notes(root, "# Concurrency control\n\n![a lock](figures/slide-001.png)\n")
+    result = finish(root)
+    assert result["output"] == str(workdir.out_dir(root) / "lec8-txn-cc.md")
+    assert (workdir.out_dir(root) / "lec8-txn-cc.md").is_file()
