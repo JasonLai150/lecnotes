@@ -226,3 +226,7 @@ Test-first, with fixtures synthesized at test time: Markdown strings written to
   intent — wrapped prose joined; code, tables, headings, and blockquotes untouched —
   and hard line breaks (two trailing spaces or a backslash) are preserved.
 - **External images** also include protocol-relative `//host/...` sources.
+- **Invalid output path.** If the output path (default or `-o`) resolves to the
+  Markdown being exported, or is an existing directory, `export` raises
+  `invalid_output` (exit 1) before writing anything. Overwriting the input would
+  destroy the source of truth.

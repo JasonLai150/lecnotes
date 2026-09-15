@@ -34,6 +34,8 @@ Start commit: 56e7d47 (189 tests passing)
 - Ruling: Continue committing directly on `main` and pushing after each reviewed task — same authorization as the first build — cost if wrong: no PR history.
 - Ruling: Implementer models — haiku for T1, T2 (complete code, small); sonnet for T3, T4, T5 (markdown-it API details may diverge) and T6 (real-data verification); reviewers sonnet; final review opus — cost if wrong: an escalation round.
 
+- Ruling: Task 5 review — `-o` resolving to the input Markdown itself, or to an existing directory, raises a new code `invalid_output` (exit 1) before anything is written — the reviewer reproduced `-o <input.md>` silently overwriting the source of truth with HTML, and `-o <dir>` crashing with a traceback; one code covers both because both mean 'this output path cannot be written' — cost if wrong: one more error code in the contract.
+
 ## Deferred minors
 
 - pre-plan (bracket-fix review): `find_malformed` can list one bad link twice when the link's own text also contains `slide-NNN.png` (e.g. `[see slide-021.png](figures/slide-021.png)` → href and text fragment). Cosmetic; correctness holds.
@@ -41,9 +43,16 @@ Start commit: 56e7d47 (189 tests passing)
 - Task 1: minor (deferred): mdparse.py lost the note on why reusing one parser instance is safe; no finish-level test of a figure link inside a pipe table (covered one layer down in test_mdparse).
 - Task 2: minor (deferred): test_image_types checks 3 of 6 MIME entries; no test for a filesystem-absolute image src (e.g. /abs/x.png).
 - Task 3: minor (deferred): title extraction uses tokens[i+1].children without the `or []` guard used elsewhere; no test for a figure paragraph inside a loose list or blockquote (verified correct manually).
+- Task 4: minor (deferred): no regression tests for absolute image src in images_outside, setext heading / paragraph-then-list / no-trailing-newline unwrap cases, non-ASCII zip titles (all verified correct manually); a whitespace-only `#` heading falls back to the stem but stays in the body; duplicate Path(base_dir).resolve().
+- Task 6: minor (deferred): Notion page title sanitization turns `Learning from Data: Imitation...` into `Learning from Data- Imitation...` (colon → `-` with no space) — visible as the Notion page title.
 
 ## Progress
 - Task 1: complete (commits f4407ff..7e83b78, review clean)
 - Ruling: Controller amended Task 2's commit message (827d5d8, formerly fdf0806) before push — the implementer put the trailer lines on the subject line; code unchanged — cost if wrong: none.
 - Task 2: complete (commits 7e83b78..827d5d8, review clean; ⚠️ absolute-path src resolved: pathlib join discards base_dir, but images_outside compares the resolved absolute path with is_relative_to(base), so it is flagged for notion like ../ — final review to confirm with a test)
 - Task 3: complete (commits 827d5d8..b84a183, review clean; escaping, post-parse data URIs, and nested figures verified by reviewer)
+- Task 4: complete (commits 338d2fb..ce74d37, review clean; ⚠️ commands wiring of images_outside before write_notion_zip confirmed in Task 5's code)
+- Task 5: review Needs fixes — 1 Critical (-o equal to the input .md overwrites the source), 1 Important (-o existing directory → traceback); fix round 1 dispatched
+- Task 6: complete (commits 8cc1c75..0d193bc, review clean; real export of CS 8803 lec 1: 20/20 figures embedded in 8.5 MB HTML, 6.3 MB zip)
+- Task 5: fix round 1/5 (2 addressed, 0 open — -o == source overwrote Markdown; -o directory traceback; commits 0d193bc..c503277)
+- Task 5: complete (commits 338d2fb..c503277, review clean after 1 fix round; symlink and ..-relative -o verified)
