@@ -18,5 +18,13 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/lecnotes"]
 
+[tool.hatch.build.targets.sdist]
+exclude = ["docs/superpowers/sdd"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+filterwarnings = [
+    # Emitted by pymupdf's SWIG bindings at import. Not ours to fix; only these are silenced.
+    "ignore:builtin type Swig\\w+ has no __module__ attribute:DeprecationWarning",
+    "ignore:builtin type swigvarlink has no __module__ attribute:DeprecationWarning",
+]

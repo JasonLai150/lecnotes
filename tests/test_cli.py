@@ -1,10 +1,13 @@
 import json
+import re
 import subprocess
 import sys
+from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
-from lecnotes import workdir
+from lecnotes import commands, workdir
 from lecnotes.cli import main
 
 
@@ -154,3 +157,124 @@ def test_module_entry_point_propagates_the_exit_code(tmp_path):
     )
     assert proc.returncode == 1
     assert json.loads(proc.stdout)["error"] == "not_a_workdir"
+
+
+# --- every error code, in both output modes ---------------------------------
+#
+# Each scenario builds the situation on disk and returns the argv that trips it.
+
+
+def _prepped(synth, tmp_path, notes=None):
+    pdf = synth(tmp_path / "lec1.pdf", [{"text": f"S{i}"} for i in range(1, 4)])
+    root = tmp_path / "lec1.notes"
+    commands.prep(pdf)
+    if notes is not None:
+        workdir.notes_path(root).write_text(notes)
+    return pdf, root
+
+
+def _source_not_found(tmp_path, synth, monkeypatch):
+    return ["prep", str(tmp_path / "nope.pdf")]
+
+
+def _unsupported_format(tmp_path, synth, monkeypatch):
+    key = tmp_path / "lec1.key"
+    key.write_bytes(b"stub")
+    return ["prep", str(key)]
+
+
+def _invalid_pdf(tmp_path, synth, monkeypatch):
+    broken = tmp_path / "broken.pdf"
+    broken.write_bytes(b"not a pdf")
+    return ["prep", str(broken)]
+
+
+def _missing_converter(tmp_path, synth, monkeypatch):
+    monkeypatch.setattr("lecnotes.ingest.shutil.which", lambda _: None)
+    pptx = tmp_path / "lec1.pptx"
+    pptx.write_bytes(b"stub")
+    return ["prep", str(pptx)]
+
+
+def _conversion_failed(tmp_path, synth, monkeypatch):
+    monkeypatch.setattr("lecnotes.ingest.shutil.which", lambda _: "/usr/bin/soffice")
+    monkeypatch.setattr(
+        "lecnotes.ingest.subprocess.run",
+        lambda *a, **k: SimpleNamespace(returncode=1, stdout=b"", stderr=b"soffice: boom\n"),
+    )
+    pptx = tmp_path / "lec1.pptx"
+    pptx.write_bytes(b"stub")
+    return ["prep", str(pptx)]
+
+
+def _workdir_exists(tmp_path, synth, monkeypatch):
+    pdf, _ = _prepped(synth, tmp_path)
+    return ["prep", str(pdf)]
+
+
+def _not_a_workdir(tmp_path, synth, monkeypatch):
+    return ["finish", str(tmp_path)]
+
+
+def _notes_empty(tmp_path, synth, monkeypatch):
+    _, root = _prepped(synth, tmp_path)
+    return ["finish", str(root)]
+
+
+def _figure_out_of_range(tmp_path, synth, monkeypatch):
+    _, root = _prepped(synth, tmp_path, notes="![x](figures/slide-091.png)\n")
+    return ["finish", str(root)]
+
+
+def _figure_malformed(tmp_path, synth, monkeypatch):
+    _, root = _prepped(synth, tmp_path, notes="![x](pages/slide-002.png)\n")
+    return ["finish", str(root)]
+
+
+ERROR_SCENARIOS = {
+    "source_not_found": (_source_not_found, 1),
+    "unsupported_format": (_unsupported_format, 1),
+    "invalid_pdf": (_invalid_pdf, 1),
+    "missing_converter": (_missing_converter, 2),
+    "conversion_failed": (_conversion_failed, 2),
+    "workdir_exists": (_workdir_exists, 1),
+    "not_a_workdir": (_not_a_workdir, 1),
+    "notes_empty": (_notes_empty, 1),
+    "figure_out_of_range": (_figure_out_of_range, 1),
+    "figure_malformed": (_figure_malformed, 1),
+}
+
+
+def test_every_raised_error_code_has_a_cli_scenario():
+    src = Path(__file__).resolve().parents[1] / "src" / "lecnotes"
+    raised = {
+        code
+        for py in src.rglob("*.py")
+        for code in re.findall(r'LecnotesError\(\s*"(\w+)"', py.read_text(encoding="utf-8"))
+    }
+    assert raised == set(ERROR_SCENARIOS)
+
+
+@pytest.mark.parametrize("code", ERROR_SCENARIOS)
+def test_error_code_in_json_mode(code, tmp_path, synth, monkeypatch, capsys):
+    scenario, exit_code = ERROR_SCENARIOS[code]
+    argv = scenario(tmp_path, synth, monkeypatch)
+    capsys.readouterr()  # drop anything setup printed
+
+    assert main([*argv, "--json"]) == exit_code
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["ok"] is False
+    assert payload["error"] == code
+    assert isinstance(payload["message"], str) and payload["message"].strip()
+
+
+@pytest.mark.parametrize("code", ERROR_SCENARIOS)
+def test_error_code_in_human_mode(code, tmp_path, synth, monkeypatch, capsys):
+    scenario, exit_code = ERROR_SCENARIOS[code]
+    argv = scenario(tmp_path, synth, monkeypatch)
+    capsys.readouterr()
+
+    assert main(argv) == exit_code
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err.strip()
