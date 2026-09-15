@@ -3,3 +3,6 @@ __pycache__/
 *.pyc
 .pytest_cache/
 *.notes/
+
+# SDD review packages duplicate git history
+docs/superpowers/sdd/**/review-*.diff
