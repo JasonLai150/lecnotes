@@ -207,3 +207,22 @@ Test-first, with fixtures synthesized at test time: Markdown strings written to
   they are).
 - End to end: export the CS 8803 lecture-1 workdir to both formats and open the
   HTML.
+
+## Amendments during planning
+
+- **Shared parser.** A new `src/lecnotes/mdparse.py` owns the one markdown-it
+  configuration (`new_parser()`, `PARSER`, `inline_tokens()`), used by `finish`'s
+  figure validation and by both exporters. markdown-it-py is already a dependency
+  (added by the caption-bracket fix).
+- **Where errors are raised.** Leaf modules return findings and never raise
+  `LecnotesError`; `commands.export` resolves the input (workdir or `.md`), raises
+  `source_not_found` / `unsupported_format` / `not_finished` / `image_not_found` /
+  `image_outside_root`, and dispatches. This replaces the Architecture table's
+  `resolve_markdown` and `check_local_images` in `markdown_doc.py`; the rest of
+  that table stands (`markdown_doc`: `find_images`, `is_external`, `LocalImage`,
+  `local_images`, `missing_images`).
+- **Unwrapping** joins the source lines of each paragraph that is not inside a
+  blockquote, using markdown-it's line maps, instead of CS4440's line regex. Same
+  intent — wrapped prose joined; code, tables, headings, and blockquotes untouched —
+  and hard line breaks (two trailing spaces or a backslash) are preserved.
+- **External images** also include protocol-relative `//host/...` sources.

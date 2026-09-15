@@ -340,3 +340,29 @@ Error codes, full table:
 
 `notes_empty` compares whitespace-stripped content with the stub, which also catches a
 missing or blank file — deliberately stricter than byte-identical.
+
+## Amendments (2026-09-15, from real use)
+
+**Figure links are found by parsing, not pattern matching.** `finish` parses
+`NOTES.md` with markdown-it-py (CommonMark, raw HTML disabled, tables and
+strikethrough enabled). A caption containing brackets, such as `E_{x~p}[f(x)]`, is a
+valid figure reference; a regex had been silently skipping such figures while
+reporting success. Links inside inline code or code blocks are ignored. A link title
+(`![c](figures/slide-001.png "t")`) is valid. `figure_malformed` now also covers a
+slide image link missing its `!`, markup that fails to parse as an image, and a bare
+`slide-NNN.png` filename in prose — anything that looks like a figure reference but
+would not render as one.
+
+**Dependencies.** Runtime dependencies are pymupdf and markdown-it-py.
+
+**No figure flag.** The per-slide `figure` flag, the manifest's `figures` count, and
+the `figures` field of `prep`'s output are removed. The heuristic fired on nearly
+every slide of real decks and changed no behavior; its only effect was to suggest
+agents could skip images. Manifest page rows are `{"n", "png", "txt", "chars"}`.
+Existing workdirs whose manifests still carry the old fields keep working.
+
+**INSTRUCTIONS.md.** The agent is told to view every slide image (the `.txt` layer
+can omit equations, labels, or whole slides); to type equations as text rather than
+link them as figures; that it may go beyond the slides if each addition is marked
+`> **Beyond the slides:**`; that algorithm pseudocode is allowed when faithful to the
+slides; and that the deck is `source.pdf` in the workdir.
