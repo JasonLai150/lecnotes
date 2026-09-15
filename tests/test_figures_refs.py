@@ -149,3 +149,9 @@ def test_wrong_case_slide_links_are_malformed_not_refs(markdown, bad):
     # finish writes lowercase slide-NNN.png, so only that spelling resolves.
     assert find_refs(markdown) == []
     assert find_malformed(markdown) == [bad]
+
+
+def test_figure_links_next_to_math_still_resolve():
+    md = "Where $\\theta$ is learned:\n\n![policy $\\pi_\\theta$](figures/slide-004.png)\n"
+    assert find_refs(md) == [4]
+    assert find_malformed(md) == []
