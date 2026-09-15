@@ -84,3 +84,8 @@ def test_no_figure_flag_wording_remains():
     out = rendered()
     assert "repay a close look" not in out
     assert "hint, not a filter" not in out
+
+
+def test_display_math_must_be_flush_left():
+    out = rendered()
+    assert "flush left" in out

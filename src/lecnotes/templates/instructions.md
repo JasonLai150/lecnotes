@@ -43,7 +43,8 @@ for an equation that stands on its own:
     \nabla_\theta J(\theta) = \mathbb{E}_{\tau \sim p_\theta}\left[\sum_t \nabla_\theta \log \pi_\theta(a_t \mid s_t)\, \hat{A}_t\right]
     $$
 
-Put each `$$` on its own line, with a blank line before and after the block. No
+Put each `$$` on its own line, flush left with no indentation (the indentation
+above only marks the example), with a blank line before and after the block. No
 space just inside the dollar signs (`$x$`, not `$ x $`). Write a literal dollar
 sign as `\$`. Never use code spans or code blocks for math — keep those for code,
 identifiers, commands, and file names.

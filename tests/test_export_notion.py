@@ -182,3 +182,31 @@ def test_failed_zip_write_leaves_no_tmp(tmp_path, png, monkeypatch):
         write_notion_zip(md, images, tmp_path, dest, "n")
     assert not (tmp_path / "n.zip.tmp").exists()
     assert not dest.exists()
+
+
+def test_math_passes_through_unwrap_unchanged():
+    md = (
+        "Policy $\\pi_\\theta(a_t \\mid s_t)$ acts\nhere.\n\n"
+        "$$\n\\nabla_\\theta J(\\theta) =\n\\mathbb{E}[x]\n$$\n"
+    )
+    out = unwrap(md)
+    assert "Policy $\\pi_\\theta(a_t \\mid s_t)$ acts here." in out
+    assert "$$\n\\nabla_\\theta J(\\theta) =\n\\mathbb{E}[x]\n$$\n" in out
+
+
+def test_title_keeps_math_source():
+    # Math survives as its LaTeX source; the backslash is then an unsafe filename
+    # character and becomes "-" like any other.
+    stem, body = split_title("# The $\\pi$ policy\n\ntext\n", "lec1")
+    assert stem == "The -pi policy"
+    assert body == "text\n"
+
+
+def test_math_is_byte_identical_in_the_zip(tmp_path):
+    md = "# T\n\nInline $a_i * b_j$.\n\n$$\n\\sum_t r_t\n$$\n"
+    dest = tmp_path / "t.zip"
+    write_notion_zip(md, [], tmp_path, dest, "t")
+    with zipfile.ZipFile(dest) as zf:
+        text = zf.read("T.md").decode("utf-8")
+    assert "Inline $a_i * b_j$." in text
+    assert "$$\n\\sum_t r_t\n$$\n" in text

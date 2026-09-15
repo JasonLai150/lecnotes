@@ -21,10 +21,7 @@ segmentation across decks, a course overview) is its own design.
 **Emphasis outlines.** CS4440 distilled review decks into "what the instructor
 stressed" and fed that to writers. Valuable, but inherently multi-deck.
 
-**Math rendering (in progress, 2026-09-15).** Equations are typed as code spans
-(`E_{x~p}[f(x)]`), which is hard to read in Markdown and in the exports. They should
-be written as LaTeX and rendered: in Markdown viewers, in the HTML export, and in
-Notion.
+**Math rendering: done (LaTeX + KaTeX in HTML, passthrough to Notion).**
 
 **Observability: token usage and run stats.** No visibility into what a notes run
 cost or produced: tokens spent by the writing agent, time taken, words written,
@@ -91,7 +88,7 @@ pseudocode allowed. Still open, from the writing agents' own feedback:
   tests don't assert the command line it builds.
 - **Notion import.** The zip's page title is assumed to come from the `.md` file name
   and images from relative paths; neither has been checked against a real Notion
-  import yet.
+  import yet, and how the importer treats `$...$` inline math and `$$` blocks.
 
 ## Test gaps
 

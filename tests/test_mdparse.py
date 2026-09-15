@@ -72,3 +72,9 @@ def test_inline_text_keeps_math_source():
 def test_inline_text_of_image_alt_keeps_math():
     inline = PARSER.parse("![cap $\\theta$ `x`](f.png)\n")[1]
     assert inline_text(inline.children) == r"cap \theta x"
+
+
+def test_indented_display_math_is_a_code_block_not_math():
+    tokens = PARSER.parse("Text.\n\n    $$\n    x^2\n    $$\n")
+    assert not any(t.type == "math_block" for t in tokens)
+    assert any(t.type == "code_block" for t in tokens)

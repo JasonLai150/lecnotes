@@ -70,6 +70,11 @@ lecnotes export lec13.notes --to notion   # lec13.notes/out/lec13-notion.zip
   The page is named after the notes' title, and figures come through. (Pasting
   the `.md` alone loses the images; the zip keeps them together.)
 
+Equations are written as LaTeX (`$...$` inline, `$$` blocks), which VS Code,
+GitHub and Obsidian preview directly. The HTML export renders them with a copy of
+KaTeX embedded in the file (added only when the notes contain math, about 0.7 MB);
+the Notion zip passes them through unchanged.
+
 `export` also accepts any `.md` file, resolving images relative to it, and `-o`
 sets the output path. On a workdir it refuses to export while `NOTES.md` and
 `out/<deck>.md` differ, so you never share a stale copy: run `finish` again, or,

@@ -12,7 +12,7 @@ from pathlib import Path
 from urllib.parse import unquote
 
 from .markdown_doc import LocalImage
-from .mdparse import PARSER
+from .mdparse import PARSER, inline_text
 
 TITLE_MAX = 100
 _WHITESPACE = re.compile(r"\s+")
@@ -74,9 +74,7 @@ def split_title(markdown: str, fallback_stem: str) -> tuple[str, str]:
     tokens = PARSER.parse(markdown)
     for i, token in enumerate(tokens):
         if token.type == "heading_open" and token.tag == "h1" and token.level == 0:
-            text = PARSER.renderer.renderInlineAsText(
-                tokens[i + 1].children or [], PARSER.options, {}
-            )
+            text = inline_text(tokens[i + 1].children or [])
             stem = sanitize_filename(text)
             if not stem or not token.map:
                 return fallback_stem, markdown
