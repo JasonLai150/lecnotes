@@ -59,7 +59,6 @@ def prep(source: Path, out: Path | None = None, force: bool = False) -> dict:
         "source_format": info.source_format,
         "converted": info.converted,
         "slides": len(rows),
-        "figures": sum(r["figure"] for r in rows),
         "rendered_long_edge": TARGET_LONG_EDGE,
         "pages": rows,
     }
@@ -69,7 +68,6 @@ def prep(source: Path, out: Path | None = None, force: bool = False) -> dict:
         render_instructions(
             deck=info.deck,
             slides=manifest["slides"],
-            figures=manifest["figures"],
             source_name=info.source_name,
         ),
         encoding="utf-8",
@@ -83,7 +81,6 @@ def prep(source: Path, out: Path | None = None, force: bool = False) -> dict:
         "workdir": str(root),
         "deck": info.deck,
         "slides": manifest["slides"],
-        "figures": manifest["figures"],
         "notes_preserved": preserved,
         "instructions": str(workdir.instructions_path(root)),
         "write_to": str(notes),

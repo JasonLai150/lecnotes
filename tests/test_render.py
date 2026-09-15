@@ -2,21 +2,7 @@ import pymupdf
 import pytest
 
 from lecnotes import workdir
-from lecnotes.render import has_figure, render_deck
-
-
-def test_text_only_page_has_no_figure(synth, tmp_path):
-    path = synth(tmp_path / "d.pdf", [{"text": "just words"}])
-    doc = pymupdf.open(path)
-    assert has_figure(doc[0]) is False
-    doc.close()
-
-
-def test_page_with_many_drawings_has_a_figure(synth, tmp_path):
-    path = synth(tmp_path / "d.pdf", [{"text": "diagram", "many_lines": 20}])
-    doc = pymupdf.open(path)
-    assert has_figure(doc[0]) is True
-    doc.close()
+from lecnotes.render import render_deck
 
 
 def test_render_writes_a_png_and_txt_per_page(synth, tmp_path):
@@ -43,15 +29,14 @@ def test_png_long_edge_is_1400(synth, tmp_path):
     assert max(pix.width, pix.height) == 1400
 
 
-def test_rows_carry_n_paths_chars_and_figure_flag(synth, tmp_path):
-    pdf = synth(tmp_path / "d.pdf", [{"text": "plain"}, {"text": "fig", "many_lines": 20}])
+def test_rows_have_exactly_n_png_txt_chars(synth, tmp_path):
+    pdf = synth(tmp_path / "d.pdf", [{"text": "plain"}, {"text": "two"}])
     rows = render_deck(pdf, tmp_path / "wd")
     assert [r["n"] for r in rows] == [1, 2]
     assert rows[0]["png"] == "pages/slide-001.png"
     assert rows[0]["txt"] == "pages/slide-001.txt"
     assert rows[0]["chars"] == len("plain")
-    assert rows[0]["figure"] is False
-    assert rows[1]["figure"] is True
+    assert set(rows[0].keys()) == {"n", "png", "txt", "chars"}
 
 
 def test_blank_page_reports_zero_chars(synth, tmp_path):

@@ -32,11 +32,12 @@ That creates `lec13.notes/`:
 ```
 lec13.notes/
   INSTRUCTIONS.md    what to read, what to write, how to link figures
-  manifest.json      per-slide metadata, including which slides carry figures
+  manifest.json      per-slide metadata
   source.pdf         the deck
   pages/
-    slide-001.png    the rendered slide — diagrams exist only here
-    slide-001.txt    that slide's exact text
+    slide-001.png    the rendered slide — every one gets viewed
+    slide-001.txt    that slide's text — can be incomplete; equations and
+                      diagrams often exist only in the image
   NOTES.md           stub; the agent replaces this
 ```
 
@@ -58,7 +59,7 @@ Both commands take `--json`:
 
 ```console
 $ lecnotes prep lec13.pdf --json
-{"ok":true,"workdir":"lec13.notes","deck":"lec13","slides":47,"figures":29,
+{"ok":true,"workdir":"lec13.notes","deck":"lec13","slides":47,
  "notes_preserved":false,"instructions":"lec13.notes/INSTRUCTIONS.md",
  "write_to":"lec13.notes/NOTES.md","next":"lecnotes finish lec13.notes"}
 ```

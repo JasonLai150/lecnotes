@@ -142,6 +142,18 @@ def test_rebuild_clears_stale_figures(prepared):
     assert names == ["slide-004.png"]
 
 
+def test_finish_works_on_a_manifest_with_the_old_figure_keys(prepared):
+    """Workdirs from before the flag was removed must keep working."""
+    manifest = workdir.load_manifest(prepared)
+    manifest["figures"] = sum(1 for p in manifest["pages"])
+    manifest["pages"] = [p | {"figure": False} for p in manifest["pages"]]
+    workdir.save_manifest(prepared, manifest)
+
+    write_notes(prepared, "# T\n\nSome notes.\n")
+    result = finish(prepared)
+    assert result["ok"] is True
+
+
 def test_punctuated_deck_name_flows_through_to_the_output_file(synth, tmp_path):
     pdf = synth(tmp_path / "lec8-txn,cc.pdf", [{"text": "Locks", "small_box": (100, 100, 300, 220)}])
     root = tmp_path / "lec8-txn-cc.notes"

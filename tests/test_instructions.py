@@ -2,16 +2,15 @@ from lecnotes.instructions import render_instructions
 
 
 def rendered(**kw):
-    args = dict(deck="lec1", slides=47, figures=29, source_name="lec1.pdf")
+    args = dict(deck="lec1", slides=47, source_name="lec1.pdf")
     args.update(kw)
     return render_instructions(**args)
 
 
-def test_states_the_deck_and_counts():
+def test_states_the_deck_and_slide_count():
     out = rendered()
     assert "lec1" in out
     assert "47" in out
-    assert "29" in out
 
 
 def test_shows_the_exact_figure_link_syntax():
@@ -37,10 +36,35 @@ def test_points_at_both_the_png_and_the_txt():
 
 
 def test_no_unreplaced_placeholders():
+    # string.Template substitution uses only `$`; braces are ordinary Markdown/
+    # math text here (e.g. `E_{x~p}[f(x)]`), not placeholder syntax.
     out = rendered()
-    assert "{" not in out.replace("{{", "").replace("}}", "")
     assert "$" not in out
 
 
 def test_warns_that_figure_links_use_figures_not_pages():
     assert "not `pages/`" in rendered()
+
+
+def test_tells_the_agent_to_view_every_slide_image():
+    assert "View every slide image" in rendered()
+
+
+def test_marks_additions_beyond_the_slides():
+    assert "Beyond the slides" in rendered()
+
+
+def test_calls_algorithms_pseudocode():
+    assert "pseudocode" in rendered()
+
+
+def test_names_the_deck_source_file_and_the_original_name():
+    out = rendered(source_name="cs4440-lec3.pptx")
+    assert "source.pdf" in out
+    assert "cs4440-lec3.pptx" in out
+
+
+def test_no_figure_flag_wording_remains():
+    out = rendered()
+    assert "repay a close look" not in out
+    assert "hint, not a filter" not in out

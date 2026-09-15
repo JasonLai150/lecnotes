@@ -7,18 +7,6 @@ import pymupdf
 from . import workdir
 from .figures import TARGET_LONG_EDGE
 
-FIGURE_IMAGE_AREA = 40_000
-FIGURE_DRAWING_COUNT = 12
-
-
-def has_figure(page: pymupdf.Page) -> bool:
-    """Whether this page carries something worth looking at rather than reading.
-
-    A hint telling the agent where to look hard — nothing is withheld based on it.
-    """
-    big_images = [im for im in page.get_images(full=True) if im[2] * im[3] > FIGURE_IMAGE_AREA]
-    return bool(big_images) or len(page.get_drawings()) > FIGURE_DRAWING_COUNT
-
 
 def render_deck(pdf_path: Path, root: Path) -> list[dict]:
     """Render every page into the workdir; return the manifest rows."""
@@ -41,7 +29,6 @@ def render_deck(pdf_path: Path, root: Path) -> list[dict]:
                     "png": workdir.rel_png(i),
                     "txt": workdir.rel_txt(i),
                     "chars": len(text),
-                    "figure": has_figure(page),
                 }
             )
         return rows

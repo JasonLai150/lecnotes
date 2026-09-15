@@ -41,7 +41,7 @@ def test_source_pdf_is_copied_in(synth, tmp_path):
 
 
 def test_manifest_shape(synth, tmp_path):
-    pdf = synth(tmp_path / "lec1.pdf", [{"text": "a"}, {"text": "b", "many_lines": 20}])
+    pdf = synth(tmp_path / "lec1.pdf", [{"text": "a"}, {"text": "b"}])
     prep(pdf)
     m = workdir.load_manifest(tmp_path / "lec1.notes")
     assert m["deck"] == "lec1"
@@ -49,9 +49,10 @@ def test_manifest_shape(synth, tmp_path):
     assert m["source_format"] == "pdf"
     assert m["converted"] is False
     assert m["slides"] == 2
-    assert m["figures"] == 1
     assert m["rendered_long_edge"] == 1400
     assert len(m["pages"]) == 2
+    assert "figures" not in m
+    assert all(set(p.keys()) == {"n", "png", "txt", "chars"} for p in m["pages"])
 
 
 def test_notes_starts_as_the_stub(synth, tmp_path):
@@ -66,6 +67,11 @@ def test_result_tells_the_agent_what_to_do_next(synth, tmp_path):
     assert result["instructions"].endswith("INSTRUCTIONS.md")
     assert result["next"] == f"lecnotes finish {shlex.quote(str(tmp_path / 'lec1.notes'))}"
     assert result["notes_preserved"] is False
+
+
+def test_result_has_no_figures_key(synth, tmp_path):
+    result = prep(synth(tmp_path / "lec1.pdf", [{"text": "a"}]))
+    assert "figures" not in result
 
 
 def test_custom_output_directory(synth, tmp_path):

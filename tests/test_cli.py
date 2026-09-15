@@ -21,7 +21,8 @@ def test_prep_succeeds_and_prints_next_step(deck, tmp_path, capsys):
     assert main(["prep", str(deck)]) == 0
     out = capsys.readouterr().out
     assert "lec1.notes" in out
-    assert "5 slides" in out
+    # The slide count line says only "N slides" -- nothing trails the newline.
+    assert "  5 slides\n" in out
     assert "lecnotes finish" in out
 
 
@@ -31,6 +32,7 @@ def test_prep_json_is_parseable_and_complete(deck, capsys):
     assert payload["ok"] is True
     assert payload["deck"] == "lec1"
     assert payload["slides"] == 5
+    assert "figures" not in payload
     assert payload["notes_preserved"] is False
     assert payload["write_to"].endswith("NOTES.md")
     assert payload["next"].startswith("lecnotes finish")

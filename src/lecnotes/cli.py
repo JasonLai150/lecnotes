@@ -49,7 +49,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
 def _report_prep(result: dict) -> None:
     print(f"{result['workdir']}")
-    print(f"  {result['slides']} slides, {result['figures']} with figures")
+    print(f"  {result['slides']} slides")
     if result["notes_preserved"]:
         print("  NOTES.md preserved (not overwritten)")
     print(f"  read  {result['instructions']}")
