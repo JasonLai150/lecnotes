@@ -2,10 +2,7 @@ from lecnotes.instructions import render_instructions
 
 
 def rendered(**kw):
-    args = dict(
-        deck="lec1", slides=47, figures=29,
-        source_name="lec1.pdf", workdir_name="lec1.notes",
-    )
+    args = dict(deck="lec1", slides=47, figures=29, source_name="lec1.pdf")
     args.update(kw)
     return render_instructions(**args)
 
@@ -26,7 +23,11 @@ def test_names_the_file_to_write():
 
 
 def test_names_the_command_to_run_when_done():
-    assert "lecnotes finish lec1.notes" in rendered()
+    """Run from inside the workdir, so it holds wherever the workdir lives."""
+    out = rendered()
+    assert "    lecnotes finish .\n" in out
+    assert "from inside this directory" in out
+    assert "lec1.notes" not in out
 
 
 def test_points_at_both_the_png_and_the_txt():
@@ -36,7 +37,9 @@ def test_points_at_both_the_png_and_the_txt():
 
 
 def test_no_unreplaced_placeholders():
-    assert "{" not in rendered().replace("{{", "").replace("}}", "")
+    out = rendered()
+    assert "{" not in out.replace("{{", "").replace("}}", "")
+    assert "$" not in out
 
 
 def test_warns_that_figure_links_use_figures_not_pages():

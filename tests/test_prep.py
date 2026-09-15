@@ -1,4 +1,5 @@
 import json
+import shlex
 
 import pytest
 
@@ -63,7 +64,7 @@ def test_result_tells_the_agent_what_to_do_next(synth, tmp_path):
     assert result["ok"] is True
     assert result["write_to"].endswith("NOTES.md")
     assert result["instructions"].endswith("INSTRUCTIONS.md")
-    assert result["next"] == f"lecnotes finish {tmp_path / 'lec1.notes'}"
+    assert result["next"] == f"lecnotes finish {shlex.quote(str(tmp_path / 'lec1.notes'))}"
     assert result["notes_preserved"] is False
 
 
@@ -185,3 +186,20 @@ def test_force_from_the_workdirs_own_source_pdf(synth, tmp_path):
     assert result["slides"] == 2
     assert own.read_bytes() == pdf.read_bytes()
     assert workdir.page_png(root, 2).is_file()
+
+
+def test_next_command_quotes_a_workdir_path_with_spaces(synth, tmp_path):
+    pdf = synth(tmp_path / "lec1.pdf", [{"text": "a"}])
+    root = tmp_path / "Fall 2026" / "lec 1.notes"
+    result = prep(pdf, out=root)
+    assert result["next"] == f"lecnotes finish '{root}'"
+    assert shlex.split(result["next"]) == ["lecnotes", "finish", str(root)]
+
+
+def test_written_instructions_say_to_finish_from_inside_the_workdir(synth, tmp_path):
+    pdf = synth(tmp_path / "lec1.pdf", [{"text": "a"}])
+    root = tmp_path / "somewhere else"
+    prep(pdf, out=root)
+    text = workdir.instructions_path(root).read_text()
+    assert "lecnotes finish .\n" in text
+    assert "somewhere else" not in text

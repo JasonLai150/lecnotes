@@ -1,4 +1,6 @@
 import json
+import subprocess
+import sys
 
 import pytest
 
@@ -134,3 +136,21 @@ def test_unexpected_exception_in_human_mode_propagates(deck, monkeypatch):
     monkeypatch.setattr("lecnotes.cli.prep", boom)
     with pytest.raises(RuntimeError, match="disk on fire"):
         main(["prep", str(deck)])
+
+
+@pytest.mark.parametrize("module", ["lecnotes", "lecnotes.cli"])
+def test_runs_as_a_python_module(module):
+    proc = subprocess.run(
+        [sys.executable, "-m", module, "--version"], capture_output=True, text=True, check=False
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "lecnotes 0.1.0" in proc.stdout
+
+
+def test_module_entry_point_propagates_the_exit_code(tmp_path):
+    proc = subprocess.run(
+        [sys.executable, "-m", "lecnotes", "finish", str(tmp_path), "--json"],
+        capture_output=True, text=True, check=False,
+    )
+    assert proc.returncode == 1
+    assert json.loads(proc.stdout)["error"] == "not_a_workdir"

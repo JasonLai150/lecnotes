@@ -49,7 +49,9 @@ error.
 
 ## When you are done
 
-    lecnotes finish $workdir_name
+Run this from inside this directory:
+
+    lecnotes finish .
 
 That validates your figure links, crops and copies the figures, and assembles
 `out/$deck.md`.

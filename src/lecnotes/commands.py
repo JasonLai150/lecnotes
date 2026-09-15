@@ -1,6 +1,7 @@
 """Orchestration for the two verbs. Returns plain dicts; cli.py does the shaping."""
 
 import os
+import shlex
 import shutil
 import tempfile
 from pathlib import Path
@@ -70,7 +71,6 @@ def prep(source: Path, out: Path | None = None, force: bool = False) -> dict:
             slides=manifest["slides"],
             figures=manifest["figures"],
             source_name=info.source_name,
-            workdir_name=root.name,
         ),
         encoding="utf-8",
     )
@@ -87,7 +87,7 @@ def prep(source: Path, out: Path | None = None, force: bool = False) -> dict:
         "notes_preserved": preserved,
         "instructions": str(workdir.instructions_path(root)),
         "write_to": str(notes),
-        "next": f"lecnotes finish {root}",
+        "next": f"lecnotes finish {shlex.quote(str(root))}",
     }
 
 
