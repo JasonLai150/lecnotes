@@ -5,8 +5,9 @@ from collections.abc import Iterator
 from pathlib import Path
 
 import pymupdf
-from markdown_it import MarkdownIt
 from markdown_it.token import Token
+
+from .mdparse import inline_tokens
 
 PAD = 10  # points of breathing room around the content box
 BACKDROP_RATIO = 0.95
@@ -86,26 +87,17 @@ SLIDE_PNG_RE = re.compile(r"slide-\d+\.png")
 # all (an unclosed bracket, a bare filename mentioned in text, etc).
 LOOSE_TEXT_RE = re.compile(r"\S*slide-\d+\.png\S*")
 
-# One shared parser instance: markdown-it instances are stateful during parsing
-# but safe to reuse across calls, and this is what the export feature can reuse
-# later too.
-_MD = MarkdownIt("commonmark", {"html": False})
 
 
 def _iter_link_tokens(markdown: str) -> Iterator[Token]:
     """Yield inline `image`, `link_open`, and `text` tokens, in document order.
 
-    These are the only token types that can carry a slide figure reference (or
-    the text of one that failed to parse as a link). `code_inline`, `fence`,
-    and `code_block` tokens are never yielded, so example links inside inline
-    code or fenced code blocks are not treated as figure references.
+    Code spans, fenced code and indented code never produce image, link, or text
+    children, so example links inside code are invisible here.
     """
-    for block in _MD.parse(markdown):
-        if block.type != "inline" or not block.children:
-            continue
-        for token in block.children:
-            if token.type in ("image", "link_open", "text"):
-                yield token
+    for token in inline_tokens(markdown):
+        if token.type in ("image", "link_open", "text"):
+            yield token
 
 
 def find_refs(markdown: str) -> list[int]:
