@@ -63,6 +63,11 @@ Start commit: e8bf4ef
 - Ruling: Final review — amend the spec rather than defend it on seven gaps it had: install via `uv tool install`; INSTRUCTIONS tells agents `lecnotes finish .`; shell-quoted `next`; Unicode-aware slug with `deck` fallback; content-validated workdir identity; prep validates input before touching disk (new codes `source_not_found`, `invalid_pdf`); malformed figure links rejected (`figure_malformed`); JSON errors carry `message`; `internal_error` in --json mode; `\d{3,}` slide numbers — each reproduced by the final reviewer, most would bite the first real agent run — cost if wrong: four new error codes and a manifest-shape check in the contract.
 - Ruling: Final-review minors fixed in the same wave: SameFileError on self-source --force, soffice stderr in conversion_failed, sdist excludes sdd docs, SWIG warnings filtered, slug→output e2e test. Left as-is: layout literals outside workdir.py, deck_47 fixture, version duplication, symlinked pages/, all other deferred minors per the reviewer's triage — cost if wrong: small cleanup debt.
 
+- Ruling: Accept fix-wave deviation — strict figure regex is `slide-(\d{3}|[1-9]\d{3,})\.png` instead of `\d{3,}` — `slide-0001.png` would otherwise validate but point at a file finish never writes — cost if wrong: an agent writing 4-digit zero-padded links gets figure_malformed instead of success.
+- Ruling: Parked — re-prepping from a workdir's own `source.pdf` succeeds but renames the deck to `source` (output becomes `out/source.md`); real but rare, previously a crash, nothing downstream builds on it; fix later by keeping the existing manifest's deck name under --force — cost if wrong: a user doing exactly that gets a misnamed output file.
+- Ruling: Parked — a `.pptx` targeting an existing workdir without --force runs the soffice conversion before the workdir_exists check; wasted work, nothing written — cost if wrong: a few seconds of conversion.
+- Ruling: Keep the SDD workspace (ledger, briefs, reports) committed under docs/superpowers/sdd/ instead of deleting it at finish — user asked for all agent docs in a docs directory; only the untracked review-*.diff scratch files are removed — cost if wrong: ~30 process files in docs/, removable in one commit.
+
 ## Deferred minors
 
 
@@ -94,3 +99,4 @@ Start commit: e8bf4ef
 - Task 12: complete (commits ba0f4f3..c15c6e1, review clean after 1 fix round)
 - Task 13: complete (commits 126b515..8590591, review clean; ⚠️ README corpus stats resolved: match 4440 README's 1,226/1,240 text-layer and 758 figure counts)
 - Final review: With fixes — 0 critical, 7 important, 10 minor (e8bf4ef..ec5b3ff). One fix wave dispatched per final-fix-brief.md.
+- Final fix wave: 7 commits b2dabb4..085db76, scoped re-review: all 12 findings ADDRESSED, no new Critical/Important breakage; 177 tests passing, no warnings.
