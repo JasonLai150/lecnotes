@@ -90,3 +90,24 @@ def test_version_flag(capsys):
 
 def test_no_command_exits_nonzero(capsys):
     assert main([]) == 1
+
+
+def test_prep_missing_source_returns_1(capsys):
+    assert main(["prep"]) == 1
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "source" in captured.err
+
+
+def test_finish_missing_workdir_returns_1(capsys):
+    assert main(["finish"]) == 1
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "workdir" in captured.err
+
+
+def test_unknown_subcommand_returns_1(capsys):
+    assert main(["bogus"]) == 1
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err != ""

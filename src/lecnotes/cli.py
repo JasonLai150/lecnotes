@@ -10,13 +10,29 @@ from .commands import finish, prep
 from .errors import LecnotesError
 
 
+class _UsageError(Exception):
+    """Raised by _ArgumentParser.error() in place of argparse's default sys.exit(2).
+
+    A missing positional or an unrecognized subcommand is a usage error, so it
+    must map to exit code 1 like every other usage/validation failure -- not
+    the SystemExit(2) argparse raises for every parsing error by default.
+    """
+
+
+class _ArgumentParser(argparse.ArgumentParser):
+    def error(self, message: str) -> None:
+        self.print_usage(sys.stderr)
+        print(f"{self.prog}: error: {message}", file=sys.stderr)
+        raise _UsageError(message)
+
+
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
+    parser = _ArgumentParser(
         prog="lecnotes",
         description="Turn a lecture deck into a workdir an agent can write notes from.",
     )
     parser.add_argument("--version", action="version", version=f"lecnotes {__version__}")
-    sub = parser.add_subparsers(dest="command")
+    sub = parser.add_subparsers(dest="command", parser_class=_ArgumentParser)
 
     p = sub.add_parser("prep", help="render a deck into a new workdir")
     p.add_argument("source", type=Path, help="deck to prepare (.pdf, .pptx, .ppt)")
@@ -48,7 +64,11 @@ def _report_finish(result: dict) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
-    args = parser.parse_args(argv)
+    try:
+        args = parser.parse_args(argv)
+    except _UsageError:
+        # error() already printed usage + message to stderr.
+        return 1
 
     if args.command is None:
         parser.print_usage(sys.stderr)
