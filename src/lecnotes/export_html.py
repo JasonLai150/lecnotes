@@ -1,7 +1,8 @@
 """Markdown to one self-contained HTML file.
 
-Everything the page needs is inside it: figures as data URIs, styles inline, no
-scripts, no requests. It renders the same offline, forever.
+Everything the page needs is inside it: figures as data URIs, styles inline, and
+no requests. There is no JavaScript unless the notes contain math, in which case
+a bundled copy of KaTeX renders it. It renders the same offline, forever.
 """
 
 import base64
@@ -67,6 +68,7 @@ hr { border: none; border-top: 1px solid var(--rule); margin: 2.5em 0; }
 
 _MATH_CSS = """
 .lecnotes-math-display { display: block; margin: 1.2em 0; overflow-x: auto; overflow-y: hidden; }
+.lecnotes-math-display .katex-display { margin: 0; }
 """
 
 # Render every math element in place. throwOnError: false shows a bad formula's
@@ -101,6 +103,15 @@ def _math_block(self, tokens, idx, options, env):
     return f'<div class="lecnotes-math lecnotes-math-display">{latex}</div>\n'
 
 
+def _image(self, tokens, idx, options, env):
+    # markdown-it-py's default image renderer rebuilds alt from
+    # renderInlineAsText, which silently drops math tokens. inline_text keeps
+    # the LaTeX source instead, so alt text like "loop $\pi_\theta$" survives.
+    token = tokens[idx]
+    token.attrSet("alt", inline_text(token.children or []))
+    return self.renderToken(tokens, idx, options, env)
+
+
 def _data_uri(src: str, path: Path) -> str:
     # The type follows the link's extension, as in markdown_doc.LocalImage.mime.
     mime = IMAGE_TYPES[posixpath.splitext(src)[1].lower()]
@@ -127,6 +138,7 @@ def render_html(markdown: str, base_dir: Path, title_fallback: str) -> str:
     md = new_parser()  # a fresh instance: the render rules below must not leak
     md.add_render_rule("paragraph_open", _paragraph_open)
     md.add_render_rule("paragraph_close", _paragraph_close)
+    md.add_render_rule("image", _image)
     md.add_render_rule("math_inline", _math_inline)
     md.add_render_rule("math_inline_double", _math_inline_display)
     md.add_render_rule("math_block", _math_block)

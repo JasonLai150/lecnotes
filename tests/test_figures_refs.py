@@ -155,3 +155,13 @@ def test_figure_links_next_to_math_still_resolve():
     md = "Where $\\theta$ is learned:\n\n![policy $\\pi_\\theta$](figures/slide-004.png)\n"
     assert find_refs(md) == [4]
     assert find_malformed(md) == []
+
+
+def test_figure_link_after_unclosed_display_math_still_resolves():
+    md = "$$\nx = 1\n\n## Heading\n\n![f](figures/slide-003.png)\n\nText.\n\n$$\ny\n$$\n"
+    assert find_refs(md) == [3]
+
+
+def test_figure_link_after_unclosed_double_dollar_sentence_still_resolves():
+    md = "$$x = 1$$.\n\n## Heading\n\n![f](figures/slide-003.png)\n\n$$\ny\n$$\n"
+    assert find_refs(md) == [3]

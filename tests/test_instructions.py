@@ -89,3 +89,21 @@ def test_no_figure_flag_wording_remains():
 def test_display_math_must_be_flush_left():
     out = rendered()
     assert "flush left" in out
+
+
+def test_warns_about_pipes_in_table_cell_math():
+    out = rendered()
+    assert "`\\mid`" in out
+    assert "table cell" in out
+
+
+def test_display_math_is_indented_inside_a_list_item():
+    out = rendered()
+    assert "inside a list item" in out
+
+
+def test_keeps_math_out_of_the_title():
+    out = rendered()
+    assert "out of the" in out
+    assert "`#`" in out
+    assert "title" in out

@@ -64,8 +64,9 @@ lecnotes export lec13.notes --to notion   # lec13.notes/out/lec13-notion.zip
 ```
 
 - **HTML** is one self-contained file: figures are embedded, styles are inline,
-  there is no JavaScript and nothing loads from the network. Open it in any
-  browser, or print it to PDF.
+  there is no JavaScript unless the notes contain math (a bundled copy of KaTeX
+  renders it), and nothing loads from the network. Open it in any browser, or
+  print it to PDF.
 - **Notion**: in Notion, go to Settings → Import → Markdown and choose the zip.
   The page is named after the notes' title, and figures come through. (Pasting
   the `.md` alone loses the images; the zip keeps them together.)

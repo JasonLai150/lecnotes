@@ -80,6 +80,14 @@ pseudocode allowed. Still open, from the writing agents' own feedback:
   (`export_notion.sanitize_filename`)
 - **Symlinked `pages/` or `out/figures/`** makes `rmtree` raise a raw `OSError`.
   Nothing is deleted. (`commands.prep`, `commands.finish`)
+- **Math in figure captions shows as LaTeX source rather than rendered.**
+  Figcaptions use `inline_text`, which keeps `$...$` as plain text; there is no
+  KaTeX render target inside a `<figcaption>`. (`export_html.render_html`)
+- **A blockquote nested in a list item at 4+ spaces of indentation still leaks
+  `>` into display math.** `_strip_blockquote_markers` only undoes the ">"
+  markers dollarmath's block rule captures for a top-level blockquote; one
+  nested inside a list item's own indentation is not covered.
+  (`mdparse._strip_blockquote_markers`)
 
 ## Not yet verified in real use
 

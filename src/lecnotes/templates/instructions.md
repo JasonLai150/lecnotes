@@ -44,13 +44,18 @@ for an equation that stands on its own:
     $$
 
 Put each `$$` on its own line, flush left with no indentation (the indentation
-above only marks the example), with a blank line before and after the block. No
-space just inside the dollar signs (`$x$`, not `$ x $`). Write a literal dollar
-sign as `\$`. Never use code spans or code blocks for math — keep those for code,
-identifiers, commands, and file names.
+above only marks the example) — except inside a list item, where the `$$` lines
+are indented to line up with the item's text — with a blank line before and after
+the block. No space just inside the dollar signs (`$x$`, not `$ x $`). Write a
+literal dollar sign as `\$`. Never use code spans or code blocks for math — keep
+those for code, identifiers, commands, and file names. Keep math out of the `#`
+title.
 
 Type every equation, including ones the slide shows only as an image, and define
 the variables it uses. Do not link a slide as a figure just to show an equation.
+
+Inside a table cell, write `\mid`, `\vert`, or `\lVert … \rVert` instead of `|` or
+`\|` — a bare pipe splits the cell.
 
 ### Going beyond the slides
 

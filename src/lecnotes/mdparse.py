@@ -52,12 +52,17 @@ def new_parser() -> MarkdownIt:
         MarkdownIt("commonmark", {"html": False})
         .enable(["table", "strikethrough"])
         # $...$ and $$...$$ LaTeX. No spaces just inside the dollars and no digit
-        # right after them, so prices like "$5 and $6" stay prose.
+        # right after them, so prices like "$5 and $6" stay prose. Blank lines
+        # are not allowed inside $$: without allow_blank_lines=False, an
+        # unclosed "$$" pairs with the next "$$" anywhere later in the
+        # document, swallowing every heading, figure link and paragraph in
+        # between as literal math content.
         .use(
             dollarmath_plugin,
             allow_labels=False,
             allow_space=False,
             allow_digits=False,
+            allow_blank_lines=False,
             double_inline=True,
         )
     )

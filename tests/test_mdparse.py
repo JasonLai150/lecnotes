@@ -106,3 +106,28 @@ def test_top_level_display_math_is_unaffected_by_the_blockquote_fix():
     blocks = [t for t in PARSER.parse("$$\n\\sum_t r_t\n$$\n") if t.type == "math_block"]
     assert len(blocks) == 1
     assert blocks[0].content.strip() == r"\sum_t r_t"
+
+
+def test_unclosed_display_math_swallows_at_most_one_paragraph():
+    md = "$$\nx = 1\n\n## Heading\n\n![f](figures/slide-003.png)\n\nText.\n\n$$\ny\n$$\n"
+    tokens = PARSER.parse(md)
+    assert any(t.type == "heading_open" for t in tokens)
+    math_blocks = [t for t in tokens if t.type == "math_block"]
+    assert len(math_blocks) == 1
+    assert math_blocks[0].content.strip() == "y"
+
+
+def test_unclosed_double_dollar_sentence_swallows_at_most_one_paragraph():
+    md = "$$x = 1$$.\n\n## Heading\n\n![f](figures/slide-003.png)\n\n$$\ny\n$$\n"
+    tokens = PARSER.parse(md)
+    assert any(t.type == "heading_open" for t in tokens)
+    math_blocks = [t for t in tokens if t.type == "math_block"]
+    assert len(math_blocks) == 1
+    assert math_blocks[0].content.strip() == "y"
+
+
+def test_display_math_inside_a_list_item_is_indented_to_the_item_text():
+    md = "1. Item text\n\n   $$\n   x^2\n   $$\n\n2. Next\n"
+    tokens = PARSER.parse(md)
+    assert any(t.type == "math_block" for t in tokens)
+    assert sum(1 for t in tokens if t.type == "ordered_list_open") == 1

@@ -151,10 +151,21 @@ def test_title_and_caption_keep_math_source(tmp_path, png):
     assert "<figcaption>cap \\theta</figcaption>" in html
 
 
+def test_display_math_does_not_double_katex_own_margin(tmp_path):
+    html = render_html(MATH_MD, tmp_path, "n")
+    assert ".lecnotes-math-display .katex-display { margin: 0; }" in html
+
+
 def test_math_in_code_is_code(tmp_path):
     html = render_html("`$x$`\n\n```\n$$y$$\n```\n", tmp_path, "n")
     assert "lecnotes-math" not in html
     assert "<script" not in html
+
+
+def test_image_alt_keeps_math_source(tmp_path, png):
+    png(tmp_path / "f.png")
+    html = render_html(r"![loop $\pi_\theta$](f.png)" + "\n", tmp_path, "n")
+    assert 'alt="loop \\pi_\\theta"' in html
 
 
 def test_display_math_in_blockquote_has_no_stray_quote_marker(tmp_path):
