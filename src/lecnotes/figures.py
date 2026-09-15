@@ -1,5 +1,6 @@
 """Content-box detection and cropped figure rendering."""
 
+import re
 from pathlib import Path
 
 import pymupdf
@@ -64,3 +65,13 @@ def crop_render(pdf_path: Path, slide: int, dest: Path) -> None:
         pix.save(dest)
     finally:
         doc.close()
+
+
+# Exactly the form INSTRUCTIONS.md tells the agent to write. A workdir holds one
+# deck, so there is no deck path segment.
+REF_RE = re.compile(r"!\[([^\]]*)\]\(figures/slide-(\d{3})\.png\)")
+
+
+def find_refs(markdown: str) -> list[int]:
+    """Sorted, de-duplicated slide numbers referenced as figures."""
+    return sorted({int(n) for _, n in REF_RE.findall(markdown)})
