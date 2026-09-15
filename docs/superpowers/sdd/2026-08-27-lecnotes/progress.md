@@ -64,6 +64,7 @@ Start commit: e8bf4ef
 - Task 1: minor (deferred): pyproject console script points at lecnotes.cli before T12 creates it (expected forward reference).
 - Task 2: minor (deferred): implementer report described a function docstring that isn't in the committed code (report accuracy only).
 - Task 3: minor (deferred): fixtures have no embedded-image key, so the image-area (>40,000px) branch of has_figure is untested by any planned test.
+- Task 6: minor (deferred): plan File Structure table lists workdir.create() but no brief defines or calls it; table is stale.
 
 ## Progress
 - Task 1: complete (commits be1f4fd..263ad3e, review clean)
@@ -71,3 +72,4 @@ Start commit: e8bf4ef
 - Task 3: complete (commits 25706ef..1bf4c21, review clean)
 - Task 4: complete (commits b32a8cd..a1be34d, review clean; deviation: crop_render rescales when pymupdf outward pixel rounding yields 1401px — reviewer reproduced and stress-tested; ⚠️ find_refs confirmed scheduled in Task 5)
 - Task 5: complete (commits e09d315..dd45b95, review clean)
+- Task 6: complete (commits 49e71db..7156123, review clean)
