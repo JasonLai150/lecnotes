@@ -18,8 +18,10 @@ zip works offline with no setup.
 pipeline mapped many decks onto topics by hand; generalizing that (topic
 segmentation across decks, a course overview) is its own design.
 
-**Emphasis outlines.** CS4440 distilled review decks into "what the instructor
-stressed" and fed that to writers. Valuable, but inherently multi-deck.
+**Emphasis outlines: designed, not built.** Superseded by
+`specs/2026-09-24-lecnotes-narration-design.md`, which takes lecture recordings as
+input and produces the emphasis outline (`NARRATION.md`) from audio rather than
+from review decks. Not implemented.
 
 **Math rendering: done (LaTeX + KaTeX in HTML, passthrough to Notion).**
 
@@ -44,7 +46,20 @@ slide image, type equations, "Beyond the slides" callouts allowed, faithful
 pseudocode allowed. Still open, from the writing agents' own feedback:
 
 - **Length and figure targets.** "Compressed" and "prefer showing a diagram" pull in
-  opposite directions; agents guessed around 4,000 words and 10-20 figures.
+  opposite directions; agents guessed around 4,000 words and 10-20 figures. Across
+  four decks the guesses ranged from 3.8k words for 42 slides to 5.8k for 98 — the
+  variance is pure guesswork, and narration-driven depth makes it matter more.
+- **Recap slides that embed earlier equations as images.** "Type every equation,
+  including ones shown only as an image" and "skip recap slides" contradict each
+  other on a callback slide. One agent summarized in prose instead; the rule should
+  say which wins.
+- **Pseudocode fenced as `text` cannot carry the slides' LaTeX names.** An agent
+  silently transliterated `$\phi$` to `phi` and `$\mathcal{B}$` to `B`, violating
+  "keep the same names". Either permit transliteration explicitly or allow math in
+  algorithm blocks.
+- **Scope of a `> **Beyond the slides:**` callout over several paragraphs** — every
+  paragraph, or only the first? Agents kept them to one paragraph to be safe.
+- **Whether the `#` title must match the deck's own lecture title.**
 - **What to skip.** "Worked examples that walk through a procedure by hand" is
   ambiguous for derivations and paper case-study slides; recurring "where are we"
   progress slides aren't mentioned.
@@ -94,6 +109,20 @@ pseudocode allowed. Still open, from the writing agents' own feedback:
 - **PowerPoint input.** LibreOffice isn't installed on the development machine, so
   `.pptx`/`.ppt` conversion has only been exercised with mocked `soffice` calls. The
   tests don't assert the command line it builds.
+- **Narration inputs other than word-level JSON.** The narration design was tested
+  only against Kaltura word-level JSON. SRT, WebVTT and plain text (which has no
+  timings at all, so emphasis must be judged by volume rather than duration) are
+  designed for but untested.
+- **Recordings that run long after teaching stops.** Every recording tested ended
+  within a minute of the lecture ending, so the "ten minutes of dead air at the end"
+  case — the one most likely to distort the emphasis signal — has never been
+  exercised.
+- **Narration generalization.** One course, one instructor, three recordings. The
+  mapping accuracy, coverage mismatch and fabrication rates are measurements of this
+  material, not of lectures in general.
+- **`## Coverage` with several recordings at once.** Both enrichment runs had a
+  single recording bearing on the deck; the per-recording versus per-deck split in
+  that section is untested with two.
 - **Notion import.** The zip's page title is assumed to come from the `.md` file name
   and images from relative paths; neither has been checked against a real Notion
   import yet, and how the importer treats `$...$` inline math and `$$` blocks.
